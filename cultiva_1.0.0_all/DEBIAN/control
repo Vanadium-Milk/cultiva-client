@@ -1,0 +1,8 @@
+Package: cultiva
+Version: 1.0.0
+Section: web
+Priority: optional
+Architecture: all
+Essential: no
+Maintainer: Leah Castro <leahvcm.01@gmail.com>
+Description: Client side application for cultiva greenhouses

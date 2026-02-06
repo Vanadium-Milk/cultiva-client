@@ -1,0 +1,12 @@
+#! /bin/bash
+
+handle_error() {
+  #Add additional error functions later if required
+  echo "could not create data directory";
+}
+
+trap 'handle_error' ERR
+
+if [ ! -d "/var/lib/cultiva" ]; then
+  mkdir /var/lib/cultiva;
+fi

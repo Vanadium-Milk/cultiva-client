@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=Cultiva
+GenericName=Cultiva
+Comment=Client side application for cultiva greenhouses
+Exec=/usr/bin/cultiva
+Icon=/usr/share/icons/icon.svg
+Terminal=true
+Type=Application
+Categories=Network;
+Keywords=Greenhouse;Server;
