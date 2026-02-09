@@ -2,14 +2,18 @@
 i18n!();
 
 use std::error::Error;
+use std::env::var;
 
 mod setup;
 mod db_client;
+#[cfg(test)]
 mod tests;
+mod rest_client;
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn  main() -> Result<(), Box<dyn Error>> {
     sudo::escalate_if_needed()?;
-    setup::setup()?;
+    setup::setup().await?;
 
     Ok( () )
 }

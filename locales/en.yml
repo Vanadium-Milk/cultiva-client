@@ -2,16 +2,23 @@ _version: 1
 db_setup: "Setting up database..."
 db_panic: "Error creating the database, make sure to run with root permissions: %{error}"
 setup_ini: "Initializing setup..."
-online_prompt: "This project runs with official servers to facilitate connectivity, but alternatively you can use your
-device as a standalone server and manually set up your own connections. Would you like to connect to official server?
-(requires login)\nYou can change your configuration later"
-online: "Use official servers (recommended)"
-offline: "Use as independent server (expert)"
+online:
+  prompt: "This project runs with official servers to facilitate connectivity, but alternatively you can use your
+  device as a standalone server and manually set up your own connections. Would you like to connect to official server?
+  (requires login)\nYou can change your configuration later"
+  official: "Use official servers (recommended)"
+  unofficial: "Use as independent server (expert)"
+  confirm_prompt: "Are you sure you want to configure your server as independent? You won't have access through the
+  mobile application unless you set up tunneling or port forwarding"
 login:
   disclaimer: "First create an account on www.proyectocultiva.com, after you've verified your email log in using the same
   account"
   user: "Email"
   pass: "Password"
+  pass_confirm: "Re-Type password"
   registration: "Do you already have an account on www.proyectocultiva.com?"
   no_acc: "No (Sign in)"
   acc: "Yes (Log in)"
+  pass_match_fail: "The passwords didn't match, try again"
+  failed: "Incorrect email or password"
+  name: "User name"

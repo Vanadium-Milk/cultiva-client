@@ -3,13 +3,23 @@ _version: 1
 db_setup: "Inicializando base de datos...."
 db_panic: "Error creando la base de datos, asegurese de ejecutar con permisos de usuario root: %{error}"
 setup_ini: "Inicializando configuración..."
-online_prompt: "Este proyecto cuenta con servidores oficiales para facilitar la conectividad, pero puedes optar por usar
-tu dispositivo como servidor independiente y establecer tus conexiones manualmente ¿Te gustaría conectarte a los
-servidores oficiales?(Requiere inicio de sesión)\nPuedes cambiar tu configuración más adelante"
-online: "Usar servidores oficiales (recomendado)"
-offline: "Usar como servidor independiente (experto)"
+online:
+  prompt: "Este proyecto cuenta con servidores oficiales para facilitar la conectividad, pero puedes optar por usar
+  tu dispositivo como servidor independiente y establecer tus conexiones manualmente ¿Te gustaría conectarte a los
+  servidores oficiales?(Requiere inicio de sesión)\nPuedes cambiar tu configuración más adelante"
+  official: "Usar servidores oficiales (recomendado)"
+  unofficial: "Usar como servidor independiente (experto)"
+  confirm_prompt: "Estás seguro de que quieres configurar tu servidor como independiente? No serás capaz de acceder
+  desde la aplicación movil a menos que configures un tunel o port forwarding"
 login:
   disclaimer: "Primero crea una cuenta en www.proyectocultiva.com, después de confirmar tu correo electrónico inicia
   sesión con la misma cuenta"
   user: "Email"
   pass: "Contraseña"
+  pass_confirm: "Confirma tu cotraseña"
+  registration: "¿Ya tienes una cuenta en www.proyectocultiva.com?"
+  no_acc: "No (Registrarse)"
+  acc: "Sí (Iniciar sesión)"
+  pass_match_fail: "Las contraseñas no coinciden, intenta de nuevo"
+  failed: "Email o contrasea incorrectos"
+  name: "Nombre de usuario"
