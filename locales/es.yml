@@ -1,0 +1,15 @@
+#file: noinspection SpellCheckingInspection
+_version: 1
+db_setup: "Inicializando base de datos...."
+db_panic: "Error creando la base de datos, asegurese de ejecutar con permisos de usuario root: %{error}"
+setup_ini: "Inicializando configuración..."
+online_prompt: "Este proyecto cuenta con servidores oficiales para facilitar la conectividad, pero puedes optar por usar
+tu dispositivo como servidor independiente y establecer tus conexiones manualmente ¿Te gustaría conectarte a los
+servidores oficiales?(Requiere inicio de sesión)\nPuedes cambiar tu configuración más adelante"
+online: "Usar servidores oficiales (recomendado)"
+offline: "Usar como servidor independiente (experto)"
+login:
+  disclaimer: "Primero crea una cuenta en www.proyectocultiva.com, después de confirmar tu correo electrónico inicia
+  sesión con la misma cuenta"
+  user: "Email"
+  pass: "Contraseña"
