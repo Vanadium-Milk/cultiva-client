@@ -1,6 +1,6 @@
 use reqwest::{Client, Response};
 use std::collections::HashMap;
-use crate::var;
+use std::env::var;
 
 pub async fn register_account(
     email: &str,

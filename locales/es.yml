@@ -23,3 +23,4 @@ login:
   pass_match_fail: "Las contraseñas no coinciden, intenta de nuevo"
   failed: "Email o contrasea incorrectos"
   name: "Nombre de usuario"
+no_root: "Faltan privilegios de usuario root, abortando"

@@ -22,3 +22,4 @@ login:
   pass_match_fail: "The passwords didn't match, try again"
   failed: "Incorrect email or password"
   name: "User name"
+no_root: "Root privileges missing, aborting"

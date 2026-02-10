@@ -2,7 +2,7 @@
 i18n!();
 
 use std::error::Error;
-use std::env::var;
+use sudo::RunningAs;
 
 mod setup;
 mod db_client;
@@ -12,7 +12,9 @@ mod rest_client;
 
 #[tokio::main]
 async fn  main() -> Result<(), Box<dyn Error>> {
-    sudo::escalate_if_needed()?;
+    if sudo::check() == RunningAs::User{
+        panic!("{}", t!("no_root"));
+    }
     setup::setup().await?;
 
     Ok( () )
