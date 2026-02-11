@@ -28,3 +28,6 @@ login:
   success: "Successfully logged into account"
   log_failed: "Failed to log into account"
 no_root: "Root privileges missing, aborting"
+config:
+  found: "Configuration file found. Configure again and overwrite?"
+  saving: "Saving configuration..."

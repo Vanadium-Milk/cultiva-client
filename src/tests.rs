@@ -2,9 +2,9 @@ use crate::db_client::Reading;
 use crate::rest_client;
 use reqwest::Error as httpError;
 use rusqlite::Error as dbError;
+use std::env::var;
 use std::thread::sleep;
 use std::time::Duration;
-use std::env::var;
 
 #[test]
 fn test_database() -> Result<(), dbError> {
@@ -59,12 +59,20 @@ async fn test_rest_client() -> Result<(), httpError> {
     //Register -------------------------------------------------------------------------------------
     println!("Registering account");
     let response = rest_client::register_account("test@test.com", "admin123", "test").await?;
-    println!("Server response: {:?}, {:?}", response.status(), response.text().await?);
+    println!(
+        "Server response: {:?}, {:?}",
+        response.status(),
+        response.text().await?
+    );
 
     //Login ----------------------------------------------------------------------------------------
     println!("Login into account");
     let response = rest_client::login_account("test@test.com", "admin123").await?;
-    println!("Server response: {:?}, {:?}", response.status(), response.text().await?);
+    println!(
+        "Server response: {:?}, {:?}",
+        response.status(),
+        response.text().await?
+    );
 
     Ok(())
 }

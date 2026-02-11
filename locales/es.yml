@@ -29,3 +29,6 @@ login:
   login_success: "Sesión iniciada exitosamente."
   log_failed: "Fallo al iniciar sesión"
 no_root: "Faltan privilegios de usuario root, abortando"
+config:
+  found: "Archivo de configuración encontrado ¿Deseas configurar de nuevo y sobreescribir?"
+  saving: "Guardando la configuración"

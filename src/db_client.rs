@@ -73,8 +73,13 @@ pub(crate) fn get_last_reading() -> Result<Reading, Error> {
 pub(crate) fn get_readings(limit: i32) -> Result<Vec<Reading>, Error> {
     let connection = get_connection()?;
 
-    let mut stmt = connection
-        .prepare(format!("SELECT * FROM readings ORDER BY time_stamp DESC LIMIT {}", limit).as_str())?;
+    let mut stmt = connection.prepare(
+        format!(
+            "SELECT * FROM readings ORDER BY time_stamp DESC LIMIT {}",
+            limit
+        )
+        .as_str(),
+    )?;
     let res = stmt.query_map([], parse_reading())?;
     let data: Result<Vec<Reading>, Error> = res.collect();
 

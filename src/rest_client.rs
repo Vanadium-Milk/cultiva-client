@@ -1,13 +1,18 @@
 use reqwest::{Client, Response};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::env::var;
-use serde::Deserialize;
 
 #[derive(Deserialize)]
-pub(crate) struct Output {
+pub struct Output {
     #[allow(non_snake_case)]
-    pub(crate) statusCode: i32,
-    pub(crate) message: String,
+    pub statusCode: i32,
+    pub message: String,
+}
+
+#[derive(Deserialize)]
+pub struct Auth {
+    pub token: String,
 }
 
 pub async fn register_account(
@@ -24,11 +29,7 @@ pub async fn register_account(
     user_register.insert("password", password);
     user_register.insert("name", username);
 
-    let res = client
-        .post(url)
-        .json(&user_register)
-        .send()
-        .await?;
+    let res = client.post(url).json(&user_register).send().await?;
 
     Ok(res)
 }
@@ -41,11 +42,7 @@ pub async fn login_account(email: &str, password: &str) -> Result<Response, reqw
     user_login.insert("email", email);
     user_login.insert("password", password);
 
-    let res = client.post(url)
-        .json(&user_login)
-        .send()
-        .await?;
+    let res = client.post(url).json(&user_login).send().await?;
 
-    //TODO add token to systemd credentials
     Ok(res)
 }

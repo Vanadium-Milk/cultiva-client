@@ -1,7 +1,10 @@
-use crate::db_client;
-use crate::rest_client;
-use dialoguer;
+mod save_settings;
+
+use crate::db_client::create_tables;
+use crate::rest_client::{Auth, Output, login_account, register_account};
+use dialoguer::{Confirm, Input, Password, Select};
 use std::error::Error;
+use crate::setup::save_settings::{Settings, save_conf, save_jwt};
 
 i18n!();
 
@@ -10,38 +13,32 @@ async fn register_loop() -> Result<(), Box<dyn Error>> {
 
     //Set email loop
     loop {
-        let email: String = dialoguer::Input::new()
-            .with_prompt(t!("login.user"))
-            .interact_text()?;
+        let email: String = Input::new().with_prompt(t!("login.user")).interact_text()?;
         //Password re-attempt loop
         loop {
-            let password: String = dialoguer::Password::new()
-                .with_prompt(t!("login.pass"))
-                .interact()?;
+            let password: String = Password::new().with_prompt(t!("login.pass")).interact()?;
             if password
-                == dialoguer::Password::new()
+                == Password::new()
                     .with_prompt(t!("login.pass_confirm"))
                     .interact()?
             {
-                let username: String = dialoguer::Input::new()
-                    .with_prompt(t!("login.name"))
-                    .interact_text()?;
+                let username: String =
+                    Input::new().with_prompt(t!("login.name")).interact_text()?;
 
                 //User registration
-                let res = rest_client::register_account(&email, &password, &username).await;
+                let res = register_account(&email, &password, &username).await;
                 match res {
                     Ok(r) => {
                         if r.status().is_success() {
                             //User register successful
                             println!("{}", t!("login.acc_created"));
-                            return Ok(())
-
+                            return Ok(());
                         } else {
                             //Register failed either bad email or account already registered
                             println!(
                                 "{}: {}",
                                 t!("login.register_fail"),
-                                r.json::<rest_client::Output>().await?.message
+                                r.json::<Output>().await?.message
                             );
                             break;
                         }
@@ -59,30 +56,25 @@ async fn register_loop() -> Result<(), Box<dyn Error>> {
 }
 
 async fn login_loop() -> Result<(), Box<dyn Error>> {
-
     loop {
-        let email: String = dialoguer::Input::new()
-            .with_prompt(t!("login.user"))
-            .interact_text()?;
+        let email: String = Input::new().with_prompt(t!("login.user")).interact_text()?;
 
-        let password: String = dialoguer::Password::new()
-            .with_prompt(t!("login.pass"))
-            .interact()?;
+        let password: String = Password::new().with_prompt(t!("login.pass")).interact()?;
 
-        let res = rest_client::login_account(&email, &password).await;
+        let res = login_account(&email, &password).await;
         match res {
             Ok(r) => {
                 if r.status().is_success() {
                     //User login successful
                     println!("{}", t!("login.success"));
+                    save_jwt(r.json::<Auth>().await?.token)?;
                     return Ok(());
-
                 } else {
                     //Incorrect credentials
                     println!(
                         "{}: {}",
                         t!("login.log_failed"),
-                        r.json::<rest_client::Output>().await?.message
+                        r.json::<Output>().await?.message
                     );
                 }
             }
@@ -93,18 +85,29 @@ async fn login_loop() -> Result<(), Box<dyn Error>> {
     }
 }
 
-pub async fn setup() -> Result<(), Box<dyn Error>> {
+pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
     println!("{}", t!("setup_ini"));
+
+    if save_settings::load_conf().is_ok()
+        && !Confirm::new().with_prompt(t!("config.found")).interact()?
+    {
+        //User canceled setup, early exit
+        return Ok(());
+    }
+
+    let mut configuration = Settings::default();
 
     //Confirm selection loop
     loop {
-        let online = dialoguer::Select::new()
+        let online = Select::new()
             .with_prompt(t!("online.prompt"))
             .items(vec![t!("online.official"), t!("online.unofficial")])
             .interact()?;
 
-        if online == 0 {
-            let register = dialoguer::Select::new()
+        configuration.network.online = online == 0;
+
+        if configuration.network.online {
+            let register = Select::new()
                 .with_prompt(t!("login.registration"))
                 .items(vec![t!("login.no_acc"), t!("login.acc")])
                 .interact()?;
@@ -112,24 +115,24 @@ pub async fn setup() -> Result<(), Box<dyn Error>> {
             if register == 0 {
                 register_loop().await?;
                 break;
-            }
-            else {
+            } else {
                 login_loop().await?;
                 break;
             }
-        } else {
-            if dialoguer::Confirm::new()
-                .with_prompt(t!("online.confirm_prompt"))
-                .interact()?
-            {
-                break;
-            }
+        } else if Confirm::new()
+            .with_prompt(t!("online.confirm_prompt"))
+            .interact()?
+        {
+            break;
         }
     }
 
+    println!("{}", t!("config.saving"));
+    save_conf(configuration)?;
+
     println!("{}", t!("db_setup"));
 
-    let created = db_client::create_tables();
+    let created = create_tables();
     if let Err(e) = created {
         panic!("{}", t!("db_panic", error = e));
     }

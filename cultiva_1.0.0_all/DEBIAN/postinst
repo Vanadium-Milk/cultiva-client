@@ -10,3 +10,6 @@ trap 'handle_error' ERR
 if [ ! -d "/var/lib/cultiva" ]; then
   mkdir /var/lib/cultiva;
 fi
+if [ ! -d "/etc/cultiva" ]; then
+  mkdir /etc/cultiva;
+fi
