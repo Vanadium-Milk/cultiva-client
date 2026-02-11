@@ -215,6 +215,7 @@ dependencies = [
  "reqwest",
  "rusqlite",
  "rust-i18n",
+ "serde",
  "sudo",
  "tokio",
 ]

@@ -1,6 +1,14 @@
 use reqwest::{Client, Response};
 use std::collections::HashMap;
 use std::env::var;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+pub(crate) struct Output {
+    #[allow(non_snake_case)]
+    pub(crate) statusCode: i32,
+    pub(crate) message: String,
+}
 
 pub async fn register_account(
     email: &str,

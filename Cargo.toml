@@ -10,6 +10,7 @@ rusqlite = { version = "0.38.0", features = ["bundled"] }
 rust-i18n = "3.1.5"
 sudo = "0.6.0"
 tokio = { version = "1.49.0", features = ["rt", "rt-multi-thread", "macros"] }
+serde = { version = "1.0.228", features = ["derive"] }
 
 [package.metadata.i18n]
 available-locales = ["en", "es"]
