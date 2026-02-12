@@ -34,3 +34,18 @@ config:
   saving: "Guardando la configuración"
   load_err: "Fallo al cargar la configuración, use el comando cultiva configure para establecerla"
 arg_unknown: "Error, argumento no reconocido"
+sensors:
+  set_sensors: "Selecciona los sensores que posee tu sistema"
+  therm: "Termómetro"
+  hygro: "Higrómetro (humedad de aire)"
+  soil_hygro: "Higrómetro de suelo"
+  lumin: "Luxómetro (Luz)"
+  co2: "Dióxido de carbono"
+  ph: "Alcalinidad (PH)"
+actuators:
+  set_act: "Select which actuadores que posee tu sistema"
+  water: "Irrigador"
+  heat: "Calefacción"
+  light: "Luz artificial"
+  uv: "Luz UV artificial"
+  shade: "Sombra controlada"

@@ -63,7 +63,7 @@ pub(crate) fn get_last_reading() -> Result<Reading, Error> {
     let connection = get_connection()?;
 
     let res = connection.query_one(
-        &"SELECT * FROM readings ORDER BY time_stamp DESC LIMIT 1 ",
+        "SELECT * FROM readings ORDER BY time_stamp DESC LIMIT 1 ",
         (),
         parse_reading(),
     )?;

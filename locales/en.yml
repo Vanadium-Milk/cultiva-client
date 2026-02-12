@@ -33,3 +33,18 @@ config:
   saving: "Saving configuration..."
   load_err: "Failed to load configuration, use the command cultiva configure to set it up"
 arg_unknown: "Error, unrecognized argument"
+sensors:
+  set_sensors: "Select which sensors does your system have"
+  therm: "Thermometer"
+  hygro: "Hygrometer (air moisture)"
+  soil_hygro: "Soil hygrometer"
+  lumin: "Luminometer (Light)"
+  co2: "Carbon dioxide"
+  ph: "Alkalinity (PH)"
+actuators:
+  set_act: "Select which actuators does your system have"
+  water: "Irrigator"
+  heat: "Heater"
+  light: "Artificial lighting"
+  uv: "Artificial UV lighting"
+  shade: "Controlled shading"
