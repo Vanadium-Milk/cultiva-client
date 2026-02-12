@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs;
-use std::io::{Error as ioError, ErrorKind};
+use std::io::{stderr, stdout, Error as ioError, ErrorKind, Write};
 use std::process::Command;
 use std::vec::Vec;
+use std::process::Stdio;
 
 #[derive(Deserialize, Serialize, Default)]
 pub struct Settings {
@@ -86,18 +87,24 @@ pub(super) fn save_conf(config: Settings) -> Result<(), Box<dyn Error>> {
 }
 
 pub(super) fn save_jwt(token: String) -> Result<(), ioError> {
-    Command::new("echo")
+    let token = Command::new("echo")
         .arg(token)
+        .stdout(Stdio::piped())
+        .spawn()?;
+
+    let out = Command::new("systemd-creds")
         .args([
-            "|",
-            "systemd-creds",
             "encrypt",
             "--name",
             "jwt",
             "/dev/stdin",
             "ciphertext.cred",
         ])
+        .stdin(Stdio::from(token.stdout.unwrap()))
         .output()?;
+
+    stdout().write_all(&out.stdout)?;
+    stderr().write_all(&out.stderr)?;
 
     Ok(())
 }
