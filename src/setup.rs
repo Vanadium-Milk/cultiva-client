@@ -2,9 +2,10 @@ mod save_settings;
 
 use crate::db_client::create_tables;
 use crate::rest_client::{Auth, Output, login_account, register_account};
+use crate::setup::save_settings::{Settings, save_conf, save_jwt};
+use config::{Config, ConfigError, File};
 use dialoguer::{Confirm, Input, Password, Select};
 use std::error::Error;
-use crate::setup::save_settings::{Settings, save_conf, save_jwt};
 
 i18n!();
 
@@ -85,17 +86,24 @@ async fn login_loop() -> Result<(), Box<dyn Error>> {
     }
 }
 
+pub(super) fn load_conf() -> Result<Settings, ConfigError> {
+    let settings = Config::builder()
+        .add_source(File::with_name("/etc/cultiva/cultiva.toml"))
+        .build()?
+        .try_deserialize::<Settings>()?;
+
+    Ok(settings)
+}
+
 pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
     println!("{}", t!("setup_ini"));
 
-    if save_settings::load_conf().is_ok()
-        && !Confirm::new().with_prompt(t!("config.found")).interact()?
-    {
+    if load_conf().is_ok() && !Confirm::new().with_prompt(t!("config.found")).interact()? {
         //User canceled setup, early exit
         return Ok(());
     }
 
-    let mut configuration = Settings::default();
+    let mut configuration = Settings::new();
 
     //Confirm selection loop
     loop {

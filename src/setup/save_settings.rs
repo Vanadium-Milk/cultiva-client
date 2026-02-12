@@ -1,5 +1,3 @@
-use config::File;
-use config::{Config, ConfigError};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs;
@@ -7,33 +5,18 @@ use std::io::Error as ioError;
 use std::process::Command;
 
 #[derive(Deserialize, Serialize, Default)]
-pub(super) struct Settings {
-    pub(super) network: NetConf,
+pub struct Settings {
+    pub network: NetConf,
 }
 #[derive(Deserialize, Serialize, Default)]
-pub(super) struct NetConf {
-    pub(super) online: bool,
-}
-
-impl NetConf {
-    fn new() -> Self {
-        Default::default()
-    }
+pub struct NetConf {
+    pub online: bool,
 }
 
 impl Settings {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Default::default()
     }
-}
-
-pub(super) fn load_conf() -> Result<Settings, ConfigError> {
-    let settings = Config::builder()
-        .add_source(File::with_name("/etc/cultiva/cultiva.toml"))
-        .build()?
-        .try_deserialize::<Settings>()?;
-
-    Ok(settings)
 }
 
 pub(super) fn save_conf(config: Settings) -> Result<(), Box<dyn Error>> {

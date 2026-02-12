@@ -32,3 +32,5 @@ no_root: "Faltan privilegios de usuario root, abortando"
 config:
   found: "Archivo de configuración encontrado ¿Deseas configurar de nuevo y sobreescribir?"
   saving: "Guardando la configuración"
+  load_err: "Fallo al cargar la configuración, use el comando cultiva configure para establecerla"
+arg_unknown: "Error, argumento no reconocido"

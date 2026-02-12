@@ -2,6 +2,7 @@
 extern crate rust_i18n;
 i18n!();
 
+use std::env::args;
 use std::error::Error;
 use sudo::RunningAs;
 
@@ -16,7 +17,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if sudo::check() == RunningAs::User {
         panic!("{}", t!("no_root"));
     }
-    setup::setup().await?;
+
+    let args: Vec<String> = args().collect();
+    if args.len() <= 1 {
+        setup::load_conf().expect(t!("config.load_err").as_ref());
+        todo!();
+    } else if args[1] == "configure" {
+        setup::setup().await?;
+    } else {
+        panic!("{}: {}", t!("arg_unknown"), args[1]);
+    }
 
     Ok(())
 }

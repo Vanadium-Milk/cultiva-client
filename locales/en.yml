@@ -31,3 +31,5 @@ no_root: "Root privileges missing, aborting"
 config:
   found: "Configuration file found. Configure again and overwrite?"
   saving: "Saving configuration..."
+  load_err: "Failed to load configuration, use the command cultiva configure to set it up"
+arg_unknown: "Error, unrecognized argument"
