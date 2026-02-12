@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let args: Vec<String> = args().collect();
     if args.len() <= 1 {
-        setup::load_conf().expect(t!("config.load_err").as_ref());
+        setup::load_conf().unwrap_or_else(|_| panic!("{}", t!("config.load_err")));
         todo!();
     } else if args[1] == "configure" {
         setup::setup().await?;

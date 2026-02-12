@@ -2,10 +2,11 @@ mod save_settings;
 
 use crate::db_client::create_tables;
 use crate::rest_client::{Auth, Output, login_account, register_account};
-use crate::setup::save_settings::{Settings, save_conf, save_jwt};
+use crate::setup::save_settings::{Actuators, Sensors, Settings, save_conf, save_jwt};
 use config::{Config, ConfigError, File};
-use dialoguer::{Confirm, Input, Password, Select};
+use dialoguer::{Confirm, Input, MultiSelect, Password, Select};
 use std::error::Error;
+use std::io::Error as IoError;
 
 i18n!();
 
@@ -134,6 +135,38 @@ pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
             break;
         }
     }
+
+    let sensors = MultiSelect::new()
+        .with_prompt(t!("sensors.set_sensors"))
+        .items(vec![
+            t!("sensors.therm"),
+            t!("sensors.hygro"),
+            t!("sensors.soil_hygro"),
+            t!("sensors.lumin"),
+            t!("sensors.co2"),
+            t!("sensors.ph"),
+        ])
+        .interact()?;
+
+    let actuators = MultiSelect::new()
+        .with_prompt(t!("actuators.set_act"))
+        .items(vec![
+            t!("actuators.water"),
+            t!("actuators.heat"),
+            t!("actuators.light"),
+            t!("actuators.uv"),
+            t!("actuators.shade"),
+        ])
+        .interact()?;
+
+    configuration.physical_interface.sensors = sensors
+        .iter()
+        .map(|val| val.try_into())
+        .collect::<Result<Vec<Sensors>, IoError>>()?;
+    configuration.physical_interface.actuators = actuators
+        .iter()
+        .map(|val| val.try_into())
+        .collect::<Result<Vec<Actuators>, IoError>>()?;
 
     println!("{}", t!("config.saving"));
     save_conf(configuration)?;
