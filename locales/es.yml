@@ -49,3 +49,8 @@ actuators:
   light: "Luz artificial"
   uv: "Luz UV artificial"
   shade: "Sombra controlada"
+board:
+  download: "Para poder usar de forma efectiva tu placa arduino, la utilidad de linea de comandos debe ser instalada
+  ¿Continuar? (En caso de haberlo instalado previamente, este será actualizado a su última versión estable"
+  decline: "El usuario rechazó la descarga de la utilidad, abortando"
+  multiple: "Multiples tarjetas Arduino encontradas, por favor remueva una ya que esta característica aún no tiene soporte"

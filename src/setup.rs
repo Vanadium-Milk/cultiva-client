@@ -2,11 +2,13 @@ mod save_settings;
 
 use crate::db_client::create_tables;
 use crate::rest_client::{Auth, Output, login_account, register_account};
-use crate::setup::save_settings::{Actuators, Sensors, Settings, save_conf, save_jwt};
-use config::{Config, ConfigError, File};
+use crate::settings::{Actuators, Sensors, Settings, load_conf};
+use crate::setup::save_settings::{save_conf, save_jwt};
+use crate::shell::{get_board, install_arduino_cli};
 use dialoguer::{Confirm, Input, MultiSelect, Password, Select};
 use std::error::Error;
 use std::io::Error as IoError;
+use std::io::ErrorKind::Interrupted;
 
 i18n!();
 
@@ -87,15 +89,6 @@ async fn login_loop() -> Result<(), Box<dyn Error>> {
     }
 }
 
-pub(super) fn load_conf() -> Result<Settings, ConfigError> {
-    let settings = Config::builder()
-        .add_source(File::with_name("/etc/cultiva/cultiva.toml"))
-        .build()?
-        .try_deserialize::<Settings>()?;
-
-    Ok(settings)
-}
-
 pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
     println!("{}", t!("setup_ini"));
 
@@ -147,6 +140,10 @@ pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
             t!("sensors.ph"),
         ])
         .interact()?;
+    configuration.physical_interface.sensors = sensors
+        .iter()
+        .map(|val| val.try_into())
+        .collect::<Result<Vec<Sensors>, IoError>>()?;
 
     let actuators = MultiSelect::new()
         .with_prompt(t!("actuators.set_act"))
@@ -158,25 +155,27 @@ pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
             t!("actuators.shade"),
         ])
         .interact()?;
-
-    configuration.physical_interface.sensors = sensors
-        .iter()
-        .map(|val| val.try_into())
-        .collect::<Result<Vec<Sensors>, IoError>>()?;
     configuration.physical_interface.actuators = actuators
         .iter()
         .map(|val| val.try_into())
         .collect::<Result<Vec<Actuators>, IoError>>()?;
+
+    if !Confirm::new()
+        .with_prompt(t!("board.download"))
+        .interact()?
+    {
+        return Err(Box::new(IoError::new(Interrupted, t!("board.decline"))));
+    }
+    install_arduino_cli()?;
+
+    configuration.board = get_board()?;
 
     println!("{}", t!("config.saving"));
     save_conf(configuration)?;
 
     println!("{}", t!("db_setup"));
 
-    let created = create_tables();
-    if let Err(e) = created {
-        panic!("{}", t!("db_panic", error = e));
-    }
+    create_tables()?;
 
     Ok(())
 }

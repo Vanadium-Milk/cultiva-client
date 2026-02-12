@@ -48,3 +48,8 @@ actuators:
   light: "Artificial lighting"
   uv: "Artificial UV lighting"
   shade: "Controlled shading"
+board:
+  download: "To effectively use your Arduino board, the CLI utility must be installed. Proceed? (in case you've already
+  installed it will be updated to the last stable release)"
+  decline: "User declined utility download, aborting"
+  multiple: "Multiple Arduino boards found, please remove one as this feature is not yet supported"
