@@ -1,6 +1,6 @@
 use crate::settings::Board;
 use std::error::Error;
-use std::io::ErrorKind::Unsupported;
+use std::io::ErrorKind::{NotFound, Unsupported};
 use std::io::stderr;
 use std::io::stdout;
 use std::io::{Error as IoError, Write};
@@ -9,6 +9,19 @@ use std::process::{Command, Output, Stdio};
 fn display_output(out: Output) -> Result<(), IoError> {
     stdout().write_all(&out.stdout)?;
     stderr().write_all(&out.stderr)?;
+    Ok(())
+}
+
+fn install_libraries() -> Result<(), IoError> {
+    println!("Installing required sensor libraries...");
+
+    //Insert the rest of the libraries in this function
+    let out = Command::new("arduino-cli")
+        .args(["lib", "install", "DHT sensor library"])
+        .output()?;
+
+    display_output(out)?;
+
     Ok(())
 }
 
@@ -27,6 +40,8 @@ pub fn install_arduino_cli() -> Result<(), IoError> {
         .output()?;
 
     display_output(out)?;
+
+    install_libraries()?;
 
     Ok(())
 }
@@ -55,8 +70,10 @@ pub fn get_board() -> Result<Board, Box<dyn Error>> {
     let out = String::from_utf8(boards.stdout)?.trim().to_string();
     let lines: Vec<&str> = out.split("\n").collect();
 
-    //Implement later handling for multiple arduino boards
-    if lines.len() > 2 {
+    if lines.len() <= 1 {
+        return Err(Box::new(IoError::new(NotFound, t!("board.none"))));
+    } else if lines.len() > 2 {
+        //Implement later handling for multiple arduino boards
         return Err(Box::new(IoError::new(Unsupported, t!("board.multiple"))));
     }
 

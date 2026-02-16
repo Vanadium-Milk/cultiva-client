@@ -54,3 +54,4 @@ board:
   ¿Continuar? (En caso de haberlo instalado previamente, este será actualizado a su última versión estable"
   decline: "El usuario rechazó la descarga de la utilidad, abortando"
   multiple: "Multiples tarjetas Arduino encontradas, por favor remueva una ya que esta característica aún no tiene soporte"
+  none: "No se ha encontrado ninguna tarjeta Arduino conectada"
