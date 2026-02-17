@@ -55,3 +55,7 @@ board:
   decline: "User declined utility download, aborting"
   multiple: "Multiple Arduino boards found, please remove one as this feature is not yet supported"
   none: "No Arduino board was found connected"
+  source_code: "Downloading microcontroller source code..."
+  compile: "Compiling source code into Arduino core: %{core}..."
+  compile_prompt: "Do you want to automatically compile and upload supported code into your microcontroller? (Recommended)
+  \nYou can do it later by using sudo cultiva compile"

@@ -56,3 +56,7 @@ board:
   decline: "El usuario rechazó la descarga de la utilidad, abortando"
   multiple: "Multiples tarjetas Arduino encontradas, por favor remueva una ya que esta característica aún no tiene soporte"
   none: "No se ha encontrado ninguna tarjeta Arduino conectada"
+  source_code: "Descargando código fuente de microcontrolador..."
+  compile: "Compilando codigo fuente para el nucleo de arduino: %{core}..."
+  compile_prompt: "¿Deseas compilar y subir codigo automaticamente a tu microcontrolador? (Recomendado)\nPuedes hacerlo
+  más tarde con el comando sudo cultiva compile"

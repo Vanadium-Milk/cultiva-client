@@ -99,3 +99,47 @@ pub fn get_board() -> Result<Board, Box<dyn Error>> {
 
     Ok(curr_board)
 }
+
+fn get_code_path(b_name: &str) -> String {
+    let path = b_name.replace(":", "/");
+    "/var/lib/cultiva/cultiva-microcontroller".to_owned() + "/" + &path
+}
+
+pub fn compile_arduino(
+    board_name: &str,
+    sensors_flag: u8,
+    actuators_flag: u8,
+) -> Result<(), IoError> {
+    let path = get_code_path(board_name);
+
+    let out = Command::new("arduino-cli")
+        .args([
+            "compile",
+            "-b",
+            board_name,
+            "--build-property",
+            &format!(
+                "build.extra_flags=-DSENSORS={} -DACTUATORS={}",
+                sensors_flag, actuators_flag
+            ),
+            &path,
+        ])
+        .output()?;
+
+    dbg!(sensors_flag);
+    dbg!(actuators_flag);
+
+    display_output(out)?;
+    Ok(())
+}
+
+pub fn upload_arduino(board_name: &str, port: &str) -> Result<(), IoError> {
+    let path = get_code_path(board_name);
+
+    let out = Command::new("arduino-cli")
+        .args(["upload", &path, "-p", port, "-b", board_name])
+        .output()?;
+
+    display_output(out)?;
+    Ok(())
+}

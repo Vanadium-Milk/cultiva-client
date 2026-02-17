@@ -19,6 +19,11 @@ pub struct IO {
     pub actuators: Vec<Actuators>,
 }
 
+pub struct IOFlags {
+    pub sensors_flag: u8,
+    pub actuators_flag: u8,
+}
+
 #[derive(Deserialize, Serialize, Default, Debug)]
 pub struct Board {
     pub name: String,
@@ -49,15 +54,6 @@ impl Settings {
     pub fn new() -> Self {
         Default::default()
     }
-}
-
-pub fn load_conf() -> Result<Settings, ConfigError> {
-    let settings = Config::builder()
-        .add_source(File::with_name("/etc/cultiva/cultiva.toml"))
-        .build()?
-        .try_deserialize::<Settings>()?;
-
-    Ok(settings)
 }
 
 //Convert indexes from menu selections to enums
@@ -91,4 +87,45 @@ impl TryFrom<&usize> for Actuators {
         };
         Ok(res)
     }
+}
+
+impl From<IO> for IOFlags {
+    fn from(value: IO) -> Self {
+        let mut ssum: u8 = 0;
+        for s in value.sensors {
+            match s {
+                Sensors::DHT11 => ssum += 16,
+                Sensors::SoilHygrometer => ssum += 8,
+                Sensors::Luminometer => ssum += 4,
+                Sensors::Co2 => ssum += 2,
+                Sensors::PH => ssum += 1,
+                _ => {}
+            }
+        }
+
+        let mut asum: u8 = 0;
+        for a in value.actuators {
+            match a {
+                Actuators::Irrigator => asum += 16,
+                Actuators::Heater => asum += 8,
+                Actuators::Lighting => asum += 4,
+                Actuators::UV => asum += 2,
+                Actuators::Shading => asum += 1,
+            }
+        }
+
+        Self {
+            sensors_flag: ssum,
+            actuators_flag: asum,
+        }
+    }
+}
+
+pub fn load_conf() -> Result<Settings, ConfigError> {
+    let settings = Config::builder()
+        .add_source(File::with_name("/etc/cultiva/cultiva.toml"))
+        .build()?
+        .try_deserialize::<Settings>()?;
+
+    Ok(settings)
 }

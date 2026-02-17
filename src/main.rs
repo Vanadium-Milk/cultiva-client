@@ -26,6 +26,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         todo!();
     } else if args[1] == "configure" {
         setup::setup().await?;
+    } else if args[1] == "compile" {
+        setup::compile_microcontroller()?;
     } else {
         panic!("{}: {}", t!("arg_unknown"), args[1]);
     }

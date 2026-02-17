@@ -2,10 +2,11 @@ mod save_settings;
 
 use crate::db_client::create_tables;
 use crate::rest_client::{Auth, Output, login_account, register_account};
-use crate::settings::{Actuators, Sensors, Settings, load_conf};
+use crate::settings::{Actuators, IOFlags, Sensors, Settings, load_conf};
 use crate::setup::save_settings::{save_conf, save_jwt};
-use crate::shell::{get_board, install_arduino_cli};
+use crate::shell::{compile_arduino, get_board, install_arduino_cli, upload_arduino};
 use dialoguer::{Confirm, Input, MultiSelect, Password, Select};
+use git2::Repository;
 use std::error::Error;
 use std::io::Error as IoError;
 use std::io::ErrorKind::Interrupted;
@@ -87,6 +88,29 @@ async fn login_loop() -> Result<(), Box<dyn Error>> {
             }
         }
     }
+}
+
+pub(super) fn compile_microcontroller() -> Result<(), Box<dyn Error>> {
+    let config = load_conf()?;
+
+    //Clone microcontroller source code repo
+    println!("{}", t!("board.source_code"));
+    let url = "https://github.com/Vanadium-Milk/cultiva-microcontroller";
+    let path = "/var/lib/cultiva/cultiva-microcontroller/";
+
+    //Ideally this would be a fetch-pull operation, but this ensures no modifications remain
+    if std::fs::exists(path)? {
+        std::fs::remove_dir_all(path)?;
+    }
+    Repository::clone(url, "/var/lib/cultiva/cultiva-microcontroller")?;
+
+    println!("{}", t!("board.compile", core = config.board.name));
+    let flags: IOFlags = config.physical_interface.into();
+
+    compile_arduino(&config.board.name, flags.sensors_flag, flags.actuators_flag)?;
+    upload_arduino(&config.board.name, &config.board.port)?;
+
+    Ok(())
 }
 
 pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
@@ -175,8 +199,14 @@ pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
     save_conf(configuration)?;
 
     println!("{}", t!("db_setup"));
-
     create_tables()?;
+
+    if Confirm::new()
+        .with_prompt(t!("board.compile_prompt"))
+        .interact()?
+    {
+        compile_microcontroller()?;
+    }
 
     Ok(())
 }
