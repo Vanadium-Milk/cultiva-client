@@ -62,12 +62,12 @@ impl TryFrom<&usize> for Sensors {
     fn try_from(value: &usize) -> Result<Self, Error> {
         let res = match value {
             0 => Sensors::DHT11,
-            1 => Sensors::Hygrometer,
-            2 => Sensors::SoilHygrometer,
-            3 => Sensors::Luminometer,
-            4 => Sensors::Co2,
-            5 => Sensors::PH,
-            6 => Sensors::Thermometer,
+            1 => Sensors::Thermometer,
+            2 => Sensors::Hygrometer,
+            3 => Sensors::SoilHygrometer,
+            4 => Sensors::Luminometer,
+            5 => Sensors::Co2,
+            6 => Sensors::PH,
             _ => return Err(Error::new(ErrorKind::InvalidInput, "Out of range value")),
         };
         Ok(res)

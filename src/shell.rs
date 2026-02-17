@@ -126,9 +126,6 @@ pub fn compile_arduino(
         ])
         .output()?;
 
-    dbg!(sensors_flag);
-    dbg!(actuators_flag);
-
     display_output(out)?;
     Ok(())
 }
