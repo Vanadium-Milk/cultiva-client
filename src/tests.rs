@@ -1,6 +1,5 @@
 use crate::db_client::Reading;
 use crate::rest_client;
-use crate::shell::get_board;
 use reqwest::Error as httpError;
 use rusqlite::Error as dbError;
 use std::env::var;
@@ -74,14 +73,6 @@ async fn test_rest_client() -> Result<(), httpError> {
         response.status(),
         response.text().await?
     );
-
-    Ok(())
-}
-
-#[test]
-fn test_get_boards() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Querying current board information...");
-    dbg!(get_board()?);
 
     Ok(())
 }

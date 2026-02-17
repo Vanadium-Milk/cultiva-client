@@ -1,10 +1,10 @@
+mod arduino_cli;
 mod save_settings;
 
 use crate::db_client::create_tables;
 use crate::rest_client::{Auth, Output, login_account, register_account};
 use crate::settings::{Actuators, IOFlags, Sensors, Settings, load_conf};
 use crate::setup::save_settings::{save_conf, save_jwt};
-use crate::shell::{compile_arduino, get_board, install_arduino_cli, upload_arduino};
 use dialoguer::{Confirm, Input, MultiSelect, Password, Select};
 use git2::Repository;
 use std::error::Error;
@@ -107,8 +107,8 @@ pub(super) fn compile_microcontroller() -> Result<(), Box<dyn Error>> {
     println!("{}", t!("board.compile", core = config.board.name));
     let flags: IOFlags = config.physical_interface.into();
 
-    compile_arduino(&config.board.name, flags.sensors_flag, flags.actuators_flag)?;
-    upload_arduino(&config.board.name, &config.board.port)?;
+    arduino_cli::compile_sketch(&config.board.name, flags.sensors_flag, flags.actuators_flag)?;
+    arduino_cli::upload_sketch(&config.board.name, &config.board.port)?;
 
     Ok(())
 }
@@ -191,9 +191,9 @@ pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
     {
         return Err(Box::new(IoError::new(Interrupted, t!("board.decline"))));
     }
-    install_arduino_cli()?;
+    arduino_cli::install_arduino_cli()?;
 
-    configuration.board = get_board()?;
+    configuration.board = arduino_cli::get_board()?;
 
     println!("{}", t!("config.saving"));
     save_conf(configuration)?;
