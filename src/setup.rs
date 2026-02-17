@@ -132,6 +132,7 @@ pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
     let sensors = MultiSelect::new()
         .with_prompt(t!("sensors.set_sensors"))
         .items(vec![
+            t!("sensors.dht11"),
             t!("sensors.therm"),
             t!("sensors.hygro"),
             t!("sensors.soil_hygro"),

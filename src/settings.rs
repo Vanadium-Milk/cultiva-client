@@ -1,6 +1,6 @@
-use std::io::{ErrorKind, Error};
 use config::{Config, ConfigError, File};
 use serde::{Deserialize, Serialize};
+use std::io::{Error, ErrorKind};
 
 #[derive(Deserialize, Serialize, Default)]
 pub struct Settings {
@@ -27,6 +27,7 @@ pub struct Board {
 
 #[derive(Deserialize, Serialize)]
 pub enum Sensors {
+    DHT11,
     Thermometer,
     Hygrometer,
     SoilHygrometer,
@@ -64,12 +65,13 @@ impl TryFrom<&usize> for Sensors {
     type Error = Error;
     fn try_from(value: &usize) -> Result<Self, Error> {
         let res = match value {
-            0 => Sensors::Thermometer,
+            0 => Sensors::DHT11,
             1 => Sensors::Hygrometer,
             2 => Sensors::SoilHygrometer,
             3 => Sensors::Luminometer,
             4 => Sensors::Co2,
             5 => Sensors::PH,
+            6 => Sensors::Thermometer,
             _ => return Err(Error::new(ErrorKind::InvalidInput, "Out of range value")),
         };
         Ok(res)

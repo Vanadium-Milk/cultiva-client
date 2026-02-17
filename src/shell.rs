@@ -25,6 +25,18 @@ fn install_libraries() -> Result<(), IoError> {
     Ok(())
 }
 
+fn install_core(name: &str) -> Result<(), IoError> {
+    println!("Installing required arduino cores...");
+
+    let out = Command::new("arduino-cli")
+        .args(["core", "install", name])
+        .output()?;
+
+    display_output(out)?;
+
+    Ok(())
+}
+
 pub fn install_arduino_cli() -> Result<(), IoError> {
     let script = Command::new("curl")
         .args([
@@ -41,6 +53,7 @@ pub fn install_arduino_cli() -> Result<(), IoError> {
 
     display_output(out)?;
 
+    install_core("arduino:avr")?;
     install_libraries()?;
 
     Ok(())

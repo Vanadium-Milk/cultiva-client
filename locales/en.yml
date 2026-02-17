@@ -35,8 +35,9 @@ config:
 arg_unknown: "Error, unrecognized argument"
 sensors:
   set_sensors: "Select which sensors does your system have"
-  therm: "Thermometer"
-  hygro: "Hygrometer (air moisture)"
+  dht11: "DHT11 (Thermometer + hygrometer)"
+  therm: "Thermometer (standalone)"
+  hygro: "Hygrometer (air moisture) (standalone)"
   soil_hygro: "Soil hygrometer"
   lumin: "Luminometer (Light)"
   co2: "Carbon dioxide"

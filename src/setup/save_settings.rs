@@ -1,8 +1,8 @@
-use crate::settings::{Settings};
+use crate::settings::Settings;
 use crate::shell::encrypt_key;
 use std::error::Error;
 use std::fs;
-use std::io::{Error as ioError};
+use std::io::Error as ioError;
 
 pub(super) fn save_conf(config: Settings) -> Result<(), Box<dyn Error>> {
     let content = toml::to_string(&config)?;
@@ -18,7 +18,7 @@ pub(super) fn save_jwt(token: String) -> Result<(), ioError> {
 
 #[test]
 fn test_save() -> Result<(), Box<dyn Error>> {
-    use crate::settings::{Board, IO, NetConf, Sensors, Actuators};
+    use crate::settings::{Actuators, Board, IO, NetConf, Sensors};
 
     let test_settings = Settings {
         network: NetConf { online: true },
