@@ -1,13 +1,20 @@
 use rusqlite::{Connection, Error, Row};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct Reading {
-    pub(crate) timestamp: Option<String>,
-    pub(crate) temperature: Option<f32>,
-    pub(crate) air_humidity: Option<f32>,
-    pub(crate) soil_humidity: Option<f32>,
-    pub(crate) luminosity: Option<f32>,
-    pub(crate) air_quality: Option<f32>,
+    pub timestamp: Option<String>,
+    pub temperature: Option<f32>,
+    pub air_humidity: Option<f32>,
+    pub soil_humidity: Option<f32>,
+    pub luminosity: Option<f32>,
+    pub air_quality: Option<f32>,
+    pub ph: Option<f32>,
+}
+
+impl Reading {
+    pub fn new() -> Self {
+        Default::default()
+    }
 }
 
 fn get_connection() -> rusqlite::Result<Connection, Error> {
@@ -26,6 +33,7 @@ fn parse_reading() -> fn(&Row) -> Result<Reading, Error> {
             soil_humidity: row.get(3)?,
             luminosity: row.get(4)?,
             air_quality: row.get(5)?,
+            ph: row.get(6)?,
         })
     }
 }
@@ -41,7 +49,8 @@ pub(crate) fn create_tables() -> Result<(), Error> {
             air_hum     REAL UNSIGNED,
             soil_hum    REAL UNSIGNED,
             light       REAL UNSIGNED,
-            air_quality REAL UNSIGNED
+            air_quality REAL UNSIGNED,
+            ph          REAL UNSIGNED
             )",
         (),
     )?;
@@ -52,8 +61,8 @@ pub(crate) fn create_tables() -> Result<(), Error> {
 pub(crate) fn insert_reading(values: Reading) -> Result<(), Error> {
     let connection = get_connection()?;
     connection.execute(
-        "INSERT INTO readings (temperature, air_hum, soil_hum, light, air_quality) VALUES (?1, ?2, ?3, ?4, ?5)",
-        (values.temperature, values.air_humidity, values.soil_humidity, values.luminosity, values.air_quality)
+        "INSERT INTO readings (temperature, air_hum, soil_hum, light, air_quality, ph) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        (values.temperature, values.air_humidity, values.soil_humidity, values.luminosity, values.air_quality, values.ph),
     )?;
 
     Ok(())

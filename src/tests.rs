@@ -22,6 +22,7 @@ fn test_database() -> Result<(), dbError> {
         soil_humidity: Some(154.0),
         luminosity: Some(100.0),
         air_quality: Some(100.0),
+        ph: Some(8.5),
     };
 
     crate::db_client::insert_reading(test_read)?;
@@ -35,6 +36,7 @@ fn test_database() -> Result<(), dbError> {
         soil_humidity: Some(54.0),
         luminosity: Some(70.0),
         air_quality: Some(680.0),
+        ph: Some(7.5),
     };
     sleep(Duration::from_secs(1));
     crate::db_client::insert_reading(test_read)?;

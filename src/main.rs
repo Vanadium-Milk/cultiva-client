@@ -8,6 +8,7 @@ use sudo::RunningAs;
 
 mod db_client;
 mod rest_client;
+mod service;
 mod settings;
 mod setup;
 mod shell;
@@ -22,8 +23,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let args: Vec<String> = args().collect();
     if args.len() <= 1 {
-        settings::load_conf().unwrap_or_else(|_| panic!("{}", t!("config.load_err")));
-        todo!();
+        service::start_tasks()?;
     } else if args[1] == "configure" {
         setup::setup().await?;
     } else if args[1] == "compile" {

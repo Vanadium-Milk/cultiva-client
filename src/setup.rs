@@ -11,8 +11,6 @@ use std::error::Error;
 use std::io::Error as IoError;
 use std::io::ErrorKind::Interrupted;
 
-i18n!();
-
 async fn register_loop() -> Result<(), Box<dyn Error>> {
     println!("{}", t!("login.disclaimer"));
 

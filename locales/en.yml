@@ -59,3 +59,8 @@ board:
   compile: "Compiling source code into Arduino core: %{core}..."
   compile_prompt: "Do you want to automatically compile and upload supported code into your microcontroller? (Recommended)
   \nYou can do it later by using sudo cultiva compile"
+serial:
+  invalid_data: "Invalid input received"
+  input_error: "Error while receiving data"
+  insert_error: "Error while adding data into database"
+retry: "Retrying..."

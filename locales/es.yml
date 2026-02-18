@@ -60,3 +60,8 @@ board:
   compile: "Compilando codigo fuente para el nucleo de arduino: %{core}..."
   compile_prompt: "¿Deseas compilar y subir codigo automaticamente a tu microcontrolador? (Recomendado)\nPuedes hacerlo
   más tarde con el comando sudo cultiva compile"
+serial:
+  invalid_data: "Respuesta inválida recibida"
+  input_error: "Error al recibir los datos"
+  insert_error: "Error al añadir información a la base de datos"
+retry: "Intentando de nuevo..."

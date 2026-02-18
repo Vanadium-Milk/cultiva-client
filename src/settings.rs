@@ -1,5 +1,6 @@
-use config::{Config, ConfigError, File};
+use config::{Config, File};
 use serde::{Deserialize, Serialize};
+use std::io::ErrorKind::NotFound;
 use std::io::{Error, ErrorKind};
 
 #[derive(Deserialize, Serialize, Default)]
@@ -30,7 +31,7 @@ pub struct Board {
     pub port: String,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, PartialEq)]
 pub enum Sensors {
     DHT11,
     Thermometer,
@@ -121,7 +122,10 @@ impl From<IO> for IOFlags {
     }
 }
 
-pub fn load_conf() -> Result<Settings, ConfigError> {
+pub fn load_conf() -> Result<Settings, Box<dyn std::error::Error>> {
+    if !std::fs::exists("/etc/cultiva/cultiva.toml")? {
+        return Err(Box::new(Error::new(NotFound, t!("config.load_err"))));
+    }
     let settings = Config::builder()
         .add_source(File::with_name("/etc/cultiva/cultiva.toml"))
         .build()?
