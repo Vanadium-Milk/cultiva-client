@@ -15,8 +15,7 @@ mod shell;
 #[cfg(test)]
 mod tests;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     if sudo::check() == RunningAs::User {
         panic!("{}", t!("no_root"));
     }
@@ -25,7 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if args.len() <= 1 {
         service::start_tasks()?;
     } else if args[1] == "configure" {
-        setup::setup().await?;
+        //setup::setup().await?;
     } else if args[1] == "compile" {
         setup::compile_microcontroller()?;
     } else {

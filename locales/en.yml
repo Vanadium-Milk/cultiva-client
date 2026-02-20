@@ -64,3 +64,4 @@ serial:
   input_error: "Error while receiving data"
   insert_error: "Error while adding data into database"
 retry: "Retrying..."
+fatal: "Fatal error"

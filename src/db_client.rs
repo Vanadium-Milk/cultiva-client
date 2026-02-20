@@ -1,6 +1,7 @@
 use rusqlite::{Connection, Error, Row};
+use serde::Serialize;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub(crate) struct Reading {
     pub timestamp: Option<String>,
     pub temperature: Option<f32>,

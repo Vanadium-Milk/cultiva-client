@@ -65,3 +65,4 @@ serial:
   input_error: "Error al recibir los datos"
   insert_error: "Error al añadir información a la base de datos"
 retry: "Intentando de nuevo..."
+fatal: "Error crítico"
