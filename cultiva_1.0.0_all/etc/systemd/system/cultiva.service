@@ -1,0 +1,14 @@
+[Unit]
+Description=IO management for intelligent gardens
+After=networking.service
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/cultiva
+Restart=on-failure
+RestartSec=120
+LoadCredentialEncrypted=CULTIVAJWT:/etc/cultiva/jwt.cred
+Environment=JWT=%d/CULTIVAJWT
+
+[Install]
+WantedBy=multi-user.target

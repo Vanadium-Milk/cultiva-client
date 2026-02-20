@@ -23,7 +23,13 @@ pub fn encrypt_key(key: &str, name: &str) -> Result<(), IoError> {
         .spawn()?;
 
     let out = Command::new("systemd-creds")
-        .args(["encrypt", "--name", name, "/dev/stdin", "ciphertext.cred"])
+        .args([
+            "encrypt",
+            "--name",
+            name,
+            "/dev/stdin",
+            "/etc/cultiva/jwt.cred",
+        ])
         .stdin(Stdio::from(token.stdout.unwrap()))
         .output()?;
 

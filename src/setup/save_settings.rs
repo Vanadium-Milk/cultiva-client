@@ -12,7 +12,7 @@ pub(super) fn save_conf(config: Settings) -> Result<(), Box<dyn Error>> {
 }
 
 pub(super) fn save_jwt(token: String) -> Result<(), ioError> {
-    encrypt_key(&token, "jwt")?;
+    encrypt_key(&token, "CULTIVAJWT")?;
     Ok(())
 }
 
