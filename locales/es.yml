@@ -74,6 +74,10 @@ command:
   sent: "Comando enviado: %{command}"
   result: "Reportando resultado: %{result}"
   error: "Error al enviar comando: %{error}"
+  unchecked: "ADVERTENCIA no se recibió confirmación por parte del microcontrolador, los comandos pueden estar siendo
+  ignorados %{err}"
+  unmatched: "ADVERTENCIA el microcontrolador puede estar recibiendo señales erroneas. Enviado: %{sent}, Recibido:
+  %{received}"
 query:
   sent: "Datos enviados a través del socket"
   send_error: "Error enviando los datos: %{error}"

@@ -14,6 +14,13 @@ struct Response {
     data: Vec<Reading>,
 }
 
+//Not bool because There'll be more statuses probably in the future
+#[derive(Serialize)]
+pub(super) enum ResponseStatus {
+    Success,
+    Failed,
+}
+
 fn display_response(payload: Payload, _socket: RawClient) {
     dbg!(payload);
 }
@@ -47,13 +54,19 @@ pub(super) fn send_readings(
     Ok(())
 }
 
-pub(super) fn report_result(socket: RawClient, response_id: &str, result: &str) {
+pub(super) fn report_result(
+    socket: RawClient,
+    response_id: &str,
+    result: ResponseStatus,
+    message: &str,
+) {
     let res = socket.emit(
         "response",
         json!({
             "id": response_id,
             "data": {
-                "message": result,
+                "status": result,
+                "message": message
             }
         }),
     );

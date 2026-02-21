@@ -73,6 +73,8 @@ command:
   sent: "Sent command: %{command}"
   result: "Reporting result: %{result}"
   error: "Error while sending command: %{error}"
+  unchecked: "WARNING, no confirmation received by the microcontroller, commands could be being ignored: %{err}"
+  unmatched: "WARNING microcontroller may be receiving wrong inputs. Sent: %{sent}, Received: %{received}"
 query:
   sent: "Sent data over socket connection"
   send_error: "Error sending data: %{error}"

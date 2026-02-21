@@ -1,11 +1,11 @@
 mod serial;
 mod socket_io;
 
-use crate::service::socket_io::report_result;
+use crate::service::serial::BoardControl;
+use crate::service::socket_io::{ResponseStatus, report_result};
 use common::db_client::{get_readings, insert_reading};
 use common::settings::load_conf;
 use rust_socketio::{ClientBuilder, Payload, RawClient};
-use serialport::SerialPort;
 use std::error::Error;
 use std::io::Error as IoError;
 use std::io::ErrorKind::Deadlock;
@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::Duration;
 
-fn register_data(serial: Arc<Mutex<Box<dyn SerialPort>>>) -> IoError {
+fn register_data(board: Arc<Mutex<BoardControl>>) -> IoError {
     //Polling loop with delay
     let mut cycle = Duration::from_secs(10);
     loop {
@@ -21,9 +21,9 @@ fn register_data(serial: Arc<Mutex<Box<dyn SerialPort>>>) -> IoError {
         sleep(cycle);
         cycle = Duration::from_secs(10);
 
-        let locked = serial.lock();
+        let locked = board.lock();
         match locked {
-            Ok(mut serial) => match serial::poll_sensors(&mut serial) {
+            Ok(mut locked_board) => match locked_board.poll_sensors() {
                 Ok(read) => match insert_reading(read) {
                     Ok(_) => {
                         println!("{}", t!("serial.inserted"));
@@ -47,27 +47,33 @@ fn register_data(serial: Arc<Mutex<Box<dyn SerialPort>>>) -> IoError {
 pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
     let config = load_conf()?;
 
-    let port = Arc::new(Mutex::new(
+    let board = Arc::new(Mutex::new(BoardControl::new(
         serialport::new(config.board.port, 9600)
             .timeout(Duration::from_secs(5))
             .open()?,
-    ));
+    )));
 
-    //Sorry, IDK how to do this cleanly, here's two mutex copies lol
-    let command_port = Arc::clone(&port);
+    let arc_board = Arc::clone(&board);
 
     //Callback to pass the port value to the command handling function
     let activation_callback = move |payload: Payload, socket: RawClient| match payload {
         Payload::Text(text) => loop {
-            let locked = command_port.lock();
+            let locked = arc_board.lock();
             match locked {
                 Ok(mut locked) => {
                     let res_id = text[0].as_str().unwrap();
-                    match serial::send_command(&mut locked, &text[1]) {
+                    match locked.set_activation(&text[1]) {
                         Ok(_) => {
-                            report_result(socket, res_id, "success");
+                            report_result(
+                                socket,
+                                res_id,
+                                ResponseStatus::Success,
+                                "Command performed successfully",
+                            );
                         }
-                        Err(e) => report_result(socket, res_id, &e.to_string()),
+                        Err(e) => {
+                            report_result(socket, res_id, ResponseStatus::Failed, &e.to_string())
+                        }
                     }
                     break;
                 }
@@ -129,7 +135,7 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
 
     //Added delay to ensure serial connection is ready
     sleep(Duration::from_secs(5));
-    register_data(port);
+    register_data(board);
 
     Ok(())
 }
