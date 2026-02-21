@@ -1,5 +1,5 @@
-use crate::db_client::Reading;
-use crate::settings::{Sensors, load_conf};
+use common::db_client::Reading;
+use common::settings::{Sensors, load_conf};
 use serde_json::Value;
 use serialport::SerialPort;
 use std::error::Error;

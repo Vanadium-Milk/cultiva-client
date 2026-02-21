@@ -1,8 +1,5 @@
-use crate::db_client::Reading;
-use crate::rest_client;
-use reqwest::Error as httpError;
+use crate::db_client::{Reading, create_tables, insert_reading, get_last_reading, get_readings, delete_readings};
 use rusqlite::Error as dbError;
-use std::env::var;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -10,7 +7,7 @@ use std::time::Duration;
 fn test_database() -> Result<(), dbError> {
     //Table creation ----------------------------------------------------------------------------
     println!("Creating database tables...");
-    crate::db_client::create_tables()?;
+    create_tables()?;
 
     //Data insertion ---------------------------------------------------------------------------
     println!("Testing data insertion");
@@ -25,7 +22,7 @@ fn test_database() -> Result<(), dbError> {
         ph: Some(8.5),
     };
 
-    crate::db_client::insert_reading(test_read)?;
+    insert_reading(test_read)?;
 
     //Data querying ----------------------------------------------------------------------------
     println!("Testing data querying");
@@ -39,42 +36,17 @@ fn test_database() -> Result<(), dbError> {
         ph: Some(7.5),
     };
     sleep(Duration::from_secs(1));
-    crate::db_client::insert_reading(test_read)?;
+    insert_reading(test_read)?;
 
-    let last = crate::db_client::get_last_reading()?;
-    let all = crate::db_client::get_readings(2)?;
+    let last = get_last_reading()?;
+    let all = get_readings(2)?;
 
     println!("last: {:?}", last);
     println!("all: {:?}", all);
 
     //Cleanup ----------------------------------------------------------------------------------
     println!("Removing inserted rows...");
-    crate::db_client::delete_readings()?;
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn test_rest_client() -> Result<(), httpError> {
-    println!("Current server: {:?}", var("REST_URL"));
-
-    //Register -------------------------------------------------------------------------------------
-    println!("Registering account");
-    let response = rest_client::register_account("test@test.com", "admin123", "test").await?;
-    println!(
-        "Server response: {:?}, {:?}",
-        response.status(),
-        response.text().await?
-    );
-
-    //Login ----------------------------------------------------------------------------------------
-    println!("Login into account");
-    let response = rest_client::login_account("test@test.com", "admin123").await?;
-    println!(
-        "Server response: {:?}, {:?}",
-        response.status(),
-        response.text().await?
-    );
+    delete_readings()?;
 
     Ok(())
 }

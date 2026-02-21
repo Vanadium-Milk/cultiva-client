@@ -1,4 +1,4 @@
-use crate::db_client::Reading;
+use common::db_client::Reading;
 use rust_socketio::client::Client;
 use rust_socketio::{Payload, RawClient};
 use serde::Serialize;

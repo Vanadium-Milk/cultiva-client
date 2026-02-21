@@ -1,9 +1,9 @@
 mod arduino_cli;
 mod save_settings;
 
-use crate::db_client::create_tables;
-use crate::rest_client::{Auth, Output, login_account, register_account};
-use crate::settings::{Actuators, IOFlags, Sensors, Settings, load_conf};
+use common::db_client::create_tables;
+use common::rest_client::{Auth, Output, login_account, register_account};
+use common::settings::{Actuators, IOFlags, Sensors, Settings, load_conf};
 use crate::setup::save_settings::{save_conf, save_jwt};
 use dialoguer::{Confirm, Input, MultiSelect, Password, Select};
 use git2::Repository;

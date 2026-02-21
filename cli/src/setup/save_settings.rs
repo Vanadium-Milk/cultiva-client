@@ -1,4 +1,4 @@
-use crate::settings::Settings;
+use common::settings::Settings;
 use crate::shell::encrypt_key;
 use std::error::Error;
 use std::fs;
@@ -18,7 +18,7 @@ pub(super) fn save_jwt(token: String) -> Result<(), ioError> {
 
 #[test]
 fn test_save() -> Result<(), Box<dyn Error>> {
-    use crate::settings::{Actuators, Board, IO, NetConf, Sensors};
+    use common::settings::{Actuators, Board, IO, NetConf, Sensors};
 
     let test_settings = Settings {
         network: NetConf { online: true },

@@ -205,6 +205,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
+name = "cli"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "dialoguer",
+ "git2",
+ "rust-i18n",
+ "sudo",
+ "tokio",
+ "toml 0.9.12+spec-1.1.0",
+]
+
+[[package]]
 name = "cmake"
 version = "0.1.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -221,6 +234,17 @@ checksum = "ba5a308b75df32fe02788e748662718f03fde005016435c444eea572398219fd"
 dependencies = [
  "bytes",
  "memchr",
+]
+
+[[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "config",
+ "reqwest 0.13.2",
+ "rusqlite",
+ "rust-i18n",
+ "serde",
 ]
 
 [[package]]
@@ -365,19 +389,13 @@ dependencies = [
 name = "cultiva-client"
 version = "0.1.0"
 dependencies = [
- "config",
- "dialoguer",
- "git2",
- "reqwest 0.13.2",
- "rusqlite",
+ "common",
  "rust-i18n",
  "rust_socketio",
  "serde",
  "serde_json",
  "serialport",
  "sudo",
- "tokio",
- "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]

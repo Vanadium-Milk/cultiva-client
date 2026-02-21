@@ -1,8 +1,8 @@
 mod serial;
 mod socket_io;
 
-use crate::db_client::{get_readings, insert_reading};
-use crate::settings::load_conf;
+use common::db_client::{get_readings, insert_reading};
+use common::settings::load_conf;
 use rust_socketio::{ClientBuilder, Payload, RawClient};
 use serialport::SerialPort;
 use std::error::Error;

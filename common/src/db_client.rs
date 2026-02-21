@@ -2,7 +2,7 @@ use rusqlite::{Connection, Error, Row};
 use serde::Serialize;
 
 #[derive(Debug, Default, Serialize)]
-pub(crate) struct Reading {
+pub struct Reading {
     pub timestamp: Option<String>,
     pub temperature: Option<f32>,
     pub air_humidity: Option<f32>,
@@ -40,7 +40,7 @@ fn parse_reading() -> fn(&Row) -> Result<Reading, Error> {
 }
 
 // Public functions --------------------------------------------------------------------------------
-pub(crate) fn create_tables() -> Result<(), Error> {
+pub fn create_tables() -> Result<(), Error> {
     let connection = get_connection()?;
 
     connection.execute(
@@ -59,7 +59,7 @@ pub(crate) fn create_tables() -> Result<(), Error> {
     Ok(())
 }
 
-pub(crate) fn insert_reading(values: Reading) -> Result<(), Error> {
+pub fn insert_reading(values: Reading) -> Result<(), Error> {
     let connection = get_connection()?;
     connection.execute(
         "INSERT INTO readings (temperature, air_hum, soil_hum, light, air_quality, ph) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
@@ -69,7 +69,7 @@ pub(crate) fn insert_reading(values: Reading) -> Result<(), Error> {
     Ok(())
 }
 
-pub(crate) fn get_last_reading() -> Result<Reading, Error> {
+pub fn get_last_reading() -> Result<Reading, Error> {
     let connection = get_connection()?;
 
     let res = connection.query_one(
@@ -80,7 +80,7 @@ pub(crate) fn get_last_reading() -> Result<Reading, Error> {
     Ok(res)
 }
 
-pub(crate) fn get_readings(limit: i32) -> Result<Vec<Reading>, Error> {
+pub fn get_readings(limit: i32) -> Result<Vec<Reading>, Error> {
     let connection = get_connection()?;
 
     let mut stmt = connection.prepare(
@@ -97,7 +97,7 @@ pub(crate) fn get_readings(limit: i32) -> Result<Vec<Reading>, Error> {
 }
 
 //Only for debug, remove all records
-pub(crate) fn delete_readings() -> Result<(), Error> {
+pub fn delete_readings() -> Result<(), Error> {
     let connection = get_connection()?;
     connection.execute("DELETE FROM readings", ())?;
 

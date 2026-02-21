@@ -1,4 +1,4 @@
-use crate::settings::Board;
+use common::settings::Board;
 use crate::shell::{display_output, execute_command};
 use std::error::Error;
 use std::io::Error as IoError;

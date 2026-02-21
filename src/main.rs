@@ -2,34 +2,17 @@
 extern crate rust_i18n;
 i18n!();
 
-use std::env::args;
 use std::error::Error;
 use sudo::RunningAs;
 
-mod db_client;
-mod rest_client;
 mod service;
-mod settings;
-mod setup;
-mod shell;
-#[cfg(test)]
-mod tests;
 
 fn main() -> Result<(), Box<dyn Error>> {
     if sudo::check() == RunningAs::User {
         panic!("{}", t!("no_root"));
     }
 
-    let args: Vec<String> = args().collect();
-    if args.len() <= 1 {
-        service::start_tasks()?;
-    } else if args[1] == "configure" {
-        //setup::setup().await?;
-    } else if args[1] == "compile" {
-        setup::compile_microcontroller()?;
-    } else {
-        panic!("{}: {}", t!("arg_unknown"), args[1]);
-    }
+    service::start_tasks()?;
 
     Ok(())
 }

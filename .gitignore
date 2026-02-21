@@ -109,3 +109,6 @@ http-client.private.env.json
 
 #Binaries in distribution package directories
 cultiva*/usr/bin
+
+#Debian packages
+*.deb
