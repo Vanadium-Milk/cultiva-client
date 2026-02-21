@@ -61,7 +61,23 @@ board:
   \nYou can do it later by using sudo cultiva compile"
 serial:
   invalid_data: "Invalid input received"
-  input_error: "Error while receiving data"
-  insert_error: "Error while adding data into database"
+  input_error: "Error while receiving serial data: %{error}"
+  insert_error: "Error while adding data into database: %{error}"
+  inserted: "Variable data registered in database"
+  lock_error: "Could not lock the serial port: %{error}"
 retry: "Retrying..."
-fatal: "Fatal error"
+error:
+  fatal: "Fatal error: %{error}"
+  over_limit: "Unexpected number > %{limit}: %{number}"
+command:
+  sent: "Sent command: %{command}"
+  result: "Reporting result: %{result}"
+  error: "Error while sending command: %{error}"
+query:
+  sent: "Sent data over socket connection"
+  send_error: "Error sending data: %{error}"
+  retrieve_error: "Could not retrieve readings %{error}"
+socket_io:
+  payload_invalid: "Invalid payload received"
+  auth_success: "Authentication success"
+  auth_error: "Could not authenticate connection: %{error}"

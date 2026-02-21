@@ -1,12 +1,21 @@
 use common::db_client::Reading;
 use common::settings::{Sensors, load_conf};
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 use serialport::SerialPort;
 use std::error::Error;
-use std::io::ErrorKind::InvalidData;
+use std::io::ErrorKind::{InvalidData, Unsupported};
 use std::io::{Read, Write};
 use std::thread::sleep;
 use std::time::Duration;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Command {
+    irrigator: Option<bool>,
+    heater: Option<bool>,
+    lighting: Option<bool>,
+    uv: Option<bool>,
+    shading: Option<bool>,
+}
 
 //Request sensor data and parse it as a reading
 pub(super) fn poll_sensors(
@@ -70,15 +79,50 @@ pub(super) fn poll_sensors(
     Ok(read)
 }
 
-pub(super) fn send_command(connection: &mut Box<dyn SerialPort>, command: Vec<Value>) {
-    let string = command[0].to_string();
-    let res = connection.write_all(string.as_bytes());
+pub(super) fn send_command(
+    connection: &mut Box<dyn SerialPort>,
+    command: &serde_json::value::Value,
+) -> Result<(), Box<dyn Error>> {
+    let spec: Command = serde_json::from_value(command.clone())?;
+
+    let mut sum = 1;
+
+    if spec.irrigator.unwrap_or(false) {
+        sum += 16;
+    }
+    if spec.heater.unwrap_or(false) {
+        sum += 8;
+    }
+    if spec.lighting.unwrap_or(false) {
+        sum += 4;
+    }
+    if spec.uv.unwrap_or(false) {
+        sum += 2;
+    }
+    if spec.shading.unwrap_or(false) {
+        sum += 1;
+    }
+
+    //I will make a better encoder later, I'm just lazy rn
+    let encoded = match char::from_digit(sum, 33) {
+        Some(c) => c.to_string().to_uppercase(),
+        None => {
+            return Err(Box::new(std::io::Error::new(
+                Unsupported,
+                t!("error.over_limit", limit = 32, number = sum),
+            )));
+        }
+    };
+
+    let res = connection.write_all(encoded.as_bytes());
     match res {
         Ok(_) => {
-            println!("Sent command: {}", string);
+            println!("{}", t!("command.sent", command = encoded));
         }
         Err(e) => {
-            println!("Error sending command: {}", e);
+            println!("{}", t!("command.error", error = e));
         }
     }
+
+    Ok(())
 }

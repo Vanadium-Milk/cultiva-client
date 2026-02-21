@@ -62,7 +62,23 @@ board:
   más tarde con el comando sudo cultiva compile"
 serial:
   invalid_data: "Respuesta inválida recibida"
-  input_error: "Error al recibir los datos"
-  insert_error: "Error al añadir información a la base de datos"
+  input_error: "Error al recibir los datos del puerto serial: %{error}"
+  insert_error: "Error al añadir información a la base de datos: %{error}"
+  inserted: "Medición insertada en base de datos"
+  lock_error: "No se pudo tomar control del puerto serial: %{error}"
 retry: "Intentando de nuevo..."
-fatal: "Error crítico"
+error:
+  fatal: "Error crítico: %{error}"
+  over_limit: "Se esperaba un número por debajo de %{limit}, recibido: %{number}"
+command:
+  sent: "Comando enviado: %{command}"
+  result: "Reportando resultado: %{result}"
+  error: "Error al enviar comando: %{error}"
+query:
+  sent: "Datos enviados a través del socket"
+  send_error: "Error enviando los datos: %{error}"
+  retrieve_error: "No se pudo consultar las lecturas %{error}"
+socketio:
+  payload_invalid: "Payload inválido recibido"
+  auth_success: "Autenticación exitosa"
+  auth_error: "No se pudo autenticar la conexión: %{error}"

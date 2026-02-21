@@ -46,3 +46,24 @@ pub(super) fn send_readings(
     socket.emit("response", payload)?;
     Ok(())
 }
+
+pub(super) fn report_result(socket: RawClient, response_id: &str, result: &str) {
+    let res = socket.emit(
+        "response",
+        json!({
+            "id": response_id,
+            "data": {
+                "message": result,
+            }
+        }),
+    );
+
+    match res {
+        Ok(_) => {
+            println!("successfully reported result");
+        }
+        Err(e) => {
+            eprintln!("{}", e);
+        }
+    }
+}

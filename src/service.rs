@@ -1,6 +1,7 @@
 mod serial;
 mod socket_io;
 
+use crate::service::socket_io::report_result;
 use common::db_client::{get_readings, insert_reading};
 use common::settings::load_conf;
 use rust_socketio::{ClientBuilder, Payload, RawClient};
@@ -25,19 +26,19 @@ fn register_data(serial: Arc<Mutex<Box<dyn SerialPort>>>) -> IoError {
             Ok(mut serial) => match serial::poll_sensors(&mut serial) {
                 Ok(read) => match insert_reading(read) {
                     Ok(_) => {
-                        println!("insert reading success");
+                        println!("{}", t!("serial.inserted"));
                         cycle = Duration::from_mins(1);
                     }
                     Err(e) => {
-                        eprintln!("{}: {} {}", t!("serial.insert_error"), e, t!("retry"));
+                        eprintln!("{}. {}", t!("serial.insert_error", error = e), t!("retry"));
                     }
                 },
                 Err(err) => {
-                    eprintln!("{}: {} {}", t!("serial.input_error"), err, t!("retry"));
+                    eprintln!("{}, {}", t!("serial.input_error", error = err), t!("retry"));
                 }
             },
             Err(e) => {
-                return IoError::new(Deadlock, format!("{} {}", t!("fatal"), e));
+                return IoError::new(Deadlock, format!("{}", t!("error.fatal", error = e)));
             }
         }
     }
@@ -56,22 +57,28 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
     let command_port = Arc::clone(&port);
 
     //Callback to pass the port value to the command handling function
-    let activation_callback = move |payload: Payload, _| match payload {
+    let activation_callback = move |payload: Payload, socket: RawClient| match payload {
         Payload::Text(text) => loop {
             let locked = command_port.lock();
             match locked {
                 Ok(mut locked) => {
-                    serial::send_command(&mut locked, text);
+                    let res_id = text[0].as_str().unwrap();
+                    match serial::send_command(&mut locked, &text[1]) {
+                        Ok(_) => {
+                            report_result(socket, res_id, "success");
+                        }
+                        Err(e) => report_result(socket, res_id, &e.to_string()),
+                    }
                     break;
                 }
                 Err(e) => {
-                    eprintln!("Could not lock the serial port, retrying... {}", e);
+                    eprintln!("{}. {}", t!("serial.lock_error", error = e), t!("retry"));
                     sleep(Duration::from_secs(5));
                 }
             }
         },
         _ => {
-            eprintln!("Invalid payload received {:?}", payload);
+            eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
         }
     };
 
@@ -82,27 +89,27 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
                 Ok(readings) => {
                     match socket_io::send_readings(&client, text[0].as_str().unwrap(), readings) {
                         Ok(_) => {
-                            println!("sent data xd");
+                            println!("{}", t!("query.sent"));
                             break;
                         }
                         Err(e) => {
-                            eprintln!("Error sending data: {}", e);
+                            eprintln!("{}", t!("query.send_error", error = e));
                         }
                     }
                 }
                 Err(e) => {
-                    eprintln!("Could not send readings, retrying... {}", e);
+                    eprintln!("{}. {}", t!("query.retrieve_error", error = e), t!("retry"));
                 }
             }
         },
         _ => {
-            eprintln!("Invalid payload received {:?}", payload);
+            eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
         }
     };
 
     //Initiate a socket.io connection
     let socket = ClientBuilder::new("http://localhost")
-        .on("activate", activation_callback)
+        .on("command", activation_callback)
         .on("query", query_callback)
         .connect()?;
 
@@ -111,11 +118,11 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
         sleep(Duration::from_secs(10));
         match socket_io::authenticate_connection(&socket) {
             Ok(_) => {
-                println!("authentication success");
+                println!("{}", t!("socket_io.auth_success"));
                 break;
             }
             Err(e) => {
-                eprint!("Could not authenticate connection: {}", e);
+                eprint!("{}. {}", t!("socket_io.auth_error", error = e), t!("retry"));
             }
         }
     }
