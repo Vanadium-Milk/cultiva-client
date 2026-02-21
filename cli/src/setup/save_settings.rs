@@ -1,5 +1,5 @@
-use common::settings::Settings;
 use crate::shell::encrypt_key;
+use common::settings::Settings;
 use std::error::Error;
 use std::fs;
 use std::io::Error as ioError;

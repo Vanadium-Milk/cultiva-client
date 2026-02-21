@@ -1,5 +1,5 @@
-use common::settings::Board;
 use crate::shell::{display_output, execute_command};
+use common::settings::Board;
 use std::error::Error;
 use std::io::Error as IoError;
 use std::io::ErrorKind::{NotFound, Unsupported};

@@ -1,4 +1,6 @@
-use crate::db_client::{Reading, create_tables, insert_reading, get_last_reading, get_readings, delete_readings};
+use crate::db_client::{
+    Reading, create_tables, delete_readings, get_last_reading, get_readings, insert_reading,
+};
 use rusqlite::Error as dbError;
 use std::thread::sleep;
 use std::time::Duration;
