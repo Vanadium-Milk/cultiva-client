@@ -2,10 +2,11 @@ mod serial;
 mod socket_io;
 
 use crate::service::serial::BoardControl;
-use crate::service::socket_io::{ResponseStatus, report_result};
+use crate::service::socket_io::{ResponseStatus, on_failure, on_success, report_result, send_data};
 use common::db_client::{get_readings, insert_reading};
 use common::settings::load_conf;
 use rust_socketio::{ClientBuilder, Payload, RawClient};
+use serde_json::json;
 use std::error::Error;
 use std::io::Error as IoError;
 use std::io::ErrorKind::Deadlock;
@@ -53,70 +54,94 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
             .open()?,
     )));
 
-    let arc_board = Arc::clone(&board);
+    //command and activation arc of the arduino board struct
+    let act_arc = Arc::clone(&board);
+    let comm_arc = Arc::clone(&board);
 
     //Callback to pass the port value to the command handling function
-    let activation_callback = move |payload: Payload, socket: RawClient| match payload {
-        Payload::Text(text) => loop {
-            let locked = arc_board.lock();
-            match locked {
-                Ok(mut locked) => {
-                    let res_id = text[0].as_str().unwrap();
-                    match locked.set_activation(&text[1]) {
-                        Ok(_) => {
-                            report_result(
-                                socket,
-                                res_id,
-                                ResponseStatus::Success,
-                                "Command performed successfully",
-                            );
-                        }
-                        Err(e) => {
-                            report_result(socket, res_id, ResponseStatus::Failed, &e.to_string())
-                        }
+    let command_callback = move |payload: Payload, socket: RawClient| {
+        if let Payload::Text(text) = &payload
+            && text.len() >= 2
+            && let Some(response_id) = text[0].as_str()
+        {
+            match comm_arc.lock() {
+                Ok(mut locked) => match locked.set_activation(&text[1]) {
+                    Ok(_) => {
+                        report_result(
+                            socket,
+                            response_id,
+                            ResponseStatus::Success,
+                            "Command performed successfully",
+                        );
                     }
-                    break;
-                }
+                    Err(e) => {
+                        report_result(socket, response_id, ResponseStatus::Failed, &e.to_string())
+                    }
+                },
                 Err(e) => {
-                    eprintln!("{}. {}", t!("serial.lock_error", error = e), t!("retry"));
-                    sleep(Duration::from_secs(5));
+                    eprintln!("{}", t!("serial.lock_error", error = e));
                 }
             }
-        },
-        _ => {
+        } else {
             eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
         }
     };
 
-    let query_callback = |payload: Payload, client: RawClient| match payload {
-        Payload::Text(text) => loop {
-            let data = get_readings(10);
-            match data {
-                Ok(readings) => {
-                    match socket_io::send_readings(&client, text[0].as_str().unwrap(), readings) {
-                        Ok(_) => {
-                            println!("{}", t!("query.sent"));
-                            break;
-                        }
-                        Err(e) => {
-                            eprintln!("{}", t!("query.send_error", error = e));
-                        }
-                    }
-                }
+    let query_callback = |payload: Payload, client: RawClient| {
+        if let Payload::Text(text) = &payload
+            && text.len() >= 2
+            && let Some(response_id) = text[0].as_str()
+            && let Some(amount) = text[1].as_u64()
+        {
+            match get_readings(amount) {
+                Ok(readings) => send_data(
+                    &client,
+                    json!({
+                        "id": response_id,
+                        "data": readings
+                    }),
+                ),
                 Err(e) => {
-                    eprintln!("{}. {}", t!("query.retrieve_error", error = e), t!("retry"));
+                    eprintln!("{}", t!("query.retrieve_error", error = e));
                 }
             }
-        },
-        _ => {
+        } else {
+            eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
+        }
+    };
+
+    let activation_callback = move |payload: Payload, client: RawClient| {
+        if let Payload::Text(text) = &payload
+            && text.len() >= 2
+            && let Some(response_id) = text[0].as_str()
+        {
+            match act_arc.lock() {
+                Ok(locked) => send_data(
+                    &client,
+                    json!({
+                        "id": response_id,
+                        "data": locked.state
+                    }),
+                ),
+                Err(e) => {
+                    eprintln!("{}", t!("serial.lock_error", error = e));
+                }
+            }
+        } else {
             eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
         }
     };
 
     //Initiate a socket.io connection
     let socket = ClientBuilder::new("http://localhost")
-        .on("command", activation_callback)
+        .on("command", command_callback)
         .on("query", query_callback)
+        .on("activation", activation_callback)
+        .on("success", on_success)
+        .on("failure,", on_failure)
+        .reconnect_on_disconnect(true)
+        .reconnect_delay(5, 60)
+        .max_reconnect_attempts(99) //Lower this number on production
         .connect()?;
 
     //Authentication retry loop

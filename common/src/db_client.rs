@@ -80,7 +80,11 @@ pub fn get_last_reading() -> Result<Reading, Error> {
     Ok(res)
 }
 
-pub fn get_readings(limit: i32) -> Result<Vec<Reading>, Error> {
+pub fn get_readings(limit: u64) -> Result<Vec<Reading>, Error> {
+    if limit == 1 {
+        //I suppose this is faster
+        return Ok(vec![get_last_reading()?]);
+    }
     let connection = get_connection()?;
 
     let mut stmt = connection.prepare(

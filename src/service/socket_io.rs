@@ -1,18 +1,10 @@
-use common::db_client::Reading;
 use rust_socketio::client::Client;
 use rust_socketio::{Payload, RawClient};
 use serde::Serialize;
-use serde_json::json;
+use serde_json::{Value, json};
 use std::env::var;
 use std::error::Error;
 use std::fs::read_to_string;
-use std::time::Duration;
-
-#[derive(Serialize)]
-struct Response {
-    id: String,
-    data: Vec<Reading>,
-}
 
 //Not bool because There'll be more statuses probably in the future
 #[derive(Serialize)]
@@ -21,8 +13,12 @@ pub(super) enum ResponseStatus {
     Failed,
 }
 
-fn display_response(payload: Payload, _socket: RawClient) {
-    dbg!(payload);
+pub(super) fn on_success(payload: Payload, _socket: RawClient) {
+    println!("{}: {:?}", t!("socket_io.success"), payload);
+}
+
+pub(super) fn on_failure(payload: Payload, _socket: RawClient) {
+    eprintln!("{}: {:?}", t!("socket_io.failed"), payload);
 }
 
 //Authenticate with JWT stored by systemd-creds
@@ -31,27 +27,19 @@ pub(super) fn authenticate_connection(socket: &Client) -> Result<(), Box<dyn Err
     //variable called JWT with a path pointing to a plaintext file containing your token
     let cred = var("JWT")?;
     let token = "Bearer ".to_owned() + &*read_to_string(cred)?;
-    socket.emit_with_ack(
-        "authenticate",
-        token.trim_end(),
-        Duration::from_secs(5),
-        display_response,
-    )?;
+    socket.emit("authenticate", token.trim_end())?;
     Ok(())
 }
 
-pub(super) fn send_readings(
-    socket: &RawClient,
-    response_id: &str,
-    data: Vec<Reading>,
-) -> Result<(), Box<dyn Error>> {
-    let send = Response {
-        id: response_id.to_owned(),
-        data,
-    };
-    let payload = json!(send);
-    socket.emit("response", payload)?;
-    Ok(())
+pub(super) fn send_data(socket: &RawClient, payload: Value) {
+    match socket.emit("response", payload) {
+        Ok(_) => {
+            println!("{}", t!("socket_io.sent"));
+        }
+        Err(e) => {
+            eprintln!("{}", t!("socket_io.send_error", error = e));
+        }
+    }
 }
 
 pub(super) fn report_result(
@@ -73,10 +61,10 @@ pub(super) fn report_result(
 
     match res {
         Ok(_) => {
-            println!("successfully reported result");
+            println!("{}", t!("socket_io.report.success"));
         }
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("{}", t!("socket_io.report.failure", error = e));
         }
     }
 }

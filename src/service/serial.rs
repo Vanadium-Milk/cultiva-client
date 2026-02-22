@@ -19,10 +19,10 @@ struct Command {
 
 pub(super) struct BoardControl {
     port: Box<dyn SerialPort>,
-    state: ActivationState,
+    pub(super) state: ActivationState,
 }
 
-#[derive(Default)]
+#[derive(Default, Serialize)]
 pub(super) struct ActivationState {
     irrigator: bool,
     heater: bool,

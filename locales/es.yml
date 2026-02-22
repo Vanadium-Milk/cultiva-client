@@ -86,3 +86,8 @@ socketio:
   payload_invalid: "Payload inválido recibido"
   auth_success: "Autenticación exitosa"
   auth_error: "No se pudo autenticar la conexión: %{error}"
+  success: "Ack exitoso recibido"
+  failed: "Ack fallido recibido"
+  report:
+    success: "Resultado de la operación reportado exitosamente"
+    failure: "Fallo al reportar el resultado de la operación %{error}"

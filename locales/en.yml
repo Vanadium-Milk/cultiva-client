@@ -76,10 +76,15 @@ command:
   unchecked: "WARNING, no confirmation received by the microcontroller, commands could be being ignored: %{err}"
   unmatched: "WARNING microcontroller may be receiving wrong inputs. Sent: %{sent}, Received: %{received}"
 query:
-  sent: "Sent data over socket connection"
-  send_error: "Error sending data: %{error}"
   retrieve_error: "Could not retrieve readings %{error}"
 socket_io:
   payload_invalid: "Invalid payload received"
   auth_success: "Authentication success"
   auth_error: "Could not authenticate connection: %{error}"
+  success: "Successive ack received"
+  failed: "Failed ack received"
+  sent: "Sent data over socket connection"
+  send_error: "Error sending data: %{error}"
+  report:
+    success: "Successfully reported operation result"
+    failure: "Failed to report operation result %{error}"
