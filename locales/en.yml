@@ -53,7 +53,8 @@ board:
   download: "To effectively use your Arduino board, the CLI utility must be installed. Proceed? (in case you've already
   installed it will be updated to the last stable release)"
   decline: "User declined utility download, aborting"
-  multiple: "Multiple Arduino boards found, please remove one as this feature is not yet supported"
+  multiple: "Multiple serial devices detected, if you're using more than one microcontroller prefer leaving only one
+  connected as this can trigger unexpected behavior. Using: %{device}"
   none: "No Arduino board was found connected"
   source_code: "Downloading microcontroller source code..."
   compile: "Compiling source code into Arduino core: %{core}..."

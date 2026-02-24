@@ -2,7 +2,7 @@ use crate::shell::{display_output, execute_command};
 use common::settings::Board;
 use std::error::Error;
 use std::io::Error as IoError;
-use std::io::ErrorKind::{NotFound, Unsupported};
+use std::io::ErrorKind::NotFound;
 use std::process::{Command, Stdio};
 
 fn install_libraries() -> Result<(), IoError> {
@@ -54,11 +54,13 @@ pub(super) fn get_board() -> Result<Board, Box<dyn Error>> {
     let out = String::from_utf8(boards.stdout)?.trim().to_string();
     let lines: Vec<&str> = out.split("\n").collect();
 
+    //First line is the table headers
     if lines.len() <= 1 {
         return Err(Box::new(IoError::new(NotFound, t!("board.none"))));
     } else if lines.len() > 2 {
+        // I figured that the arduino cli often messes up and lists things that aren't arduino boards
         //Implement later handling for multiple arduino boards
-        return Err(Box::new(IoError::new(Unsupported, t!("board.multiple"))));
+        println!("{}", t!("board.multiple", device = lines[1]))
     }
 
     let attributes: Vec<&str> = lines[1].split(" ").collect();

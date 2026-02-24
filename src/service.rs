@@ -28,7 +28,7 @@ fn register_data(board: Arc<Mutex<BoardControl>>) -> IoError {
                 Ok(read) => match insert_reading(read) {
                     Ok(_) => {
                         println!("{}", t!("serial.inserted"));
-                        cycle = Duration::from_mins(1);
+                        cycle = Duration::from_mins(30);
                     }
                     Err(e) => {
                         eprintln!("{}. {}", t!("serial.insert_error", error = e), t!("retry"));
