@@ -7,8 +7,10 @@ edition = "2024"
 resolver = "3"
 members = ["cli", "common"]
 
-[dependencies]
+[workspace.metadata.cross.target.aarch64-unknown-linux-gnu]
+dockerfile="dockerfiles/raspberry_pi5.dockerfile"
 
+[dependencies]
 rust-i18n = "3.1.5"
 sudo = "0.6.0"
 serde = { version = "1.0.228", features = ["derive"] }
@@ -21,15 +23,3 @@ common = {path = "common"}
 available-locales = ["en", "es"]
 default-locale = "en"
 load-path = "locales"
-
-#Install required system packages: libssl and libudev
-[workspace.metadata.cross.target.aarch64-unknown-linux-gnu]
-pre-build = [
-    "dpkg --add-architecture $CROSS_DEB_ARCH",
-    "apt-get update",
-    "apt-get --assume-yes install libssl-dev:$CROSS_DEB_ARCH",
-    "apt-get --assume-yes install libudev-dev:$CROSS_DEB_ARCH"
-]
-
-[target.aarch64-unknown-linux-gnu]
-image.name = "debian:trixie"
