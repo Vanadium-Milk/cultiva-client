@@ -32,6 +32,7 @@ config:
   found: "Configuration file found. Configure again and overwrite?"
   saving: "Saving configuration..."
   load_err: "Failed to load configuration, use the command cultiva configure to set it up"
+  load: "Loading configuration files..."
 arg_unknown: "Error, unrecognized argument"
 sensors:
   set_sensors: "Select which sensors does your system have"
@@ -77,15 +78,22 @@ command:
   unchecked: "WARNING, no confirmation received by the microcontroller, commands could be being ignored: %{err}"
   unmatched: "WARNING microcontroller may be receiving wrong inputs. Sent: %{sent}, Received: %{received}"
 query:
+  sent: "Sent data over socket connection"
+  send_error: "Error sending data: %{error}"
   retrieve_error: "Could not retrieve readings %{error}"
 socket_io:
   payload_invalid: "Invalid payload received"
-  auth_success: "Authentication success"
-  auth_error: "Could not authenticate connection: %{error}"
-  success: "Successive ack received"
-  failed: "Failed ack received"
-  sent: "Sent data over socket connection"
-  send_error: "Error sending data: %{error}"
+  auth:
+    success: "Sent authentication token, awaiting response..."
+    error: "Could not authenticate connection: %{error}"
+    failed: "Too many reattempts at authentication, going offline..."
+    read_err: "Couldn't get the auth token, use the configuration tool to create it %{error}"
+  success: "Successive ack received: %{message}"
+  failed: "Failed ack received: %{message}"
   report:
     success: "Successfully reported operation result"
     failure: "Failed to report operation result %{error}"
+  disconnect_err: "Error, couldn't close connection: %{error}"
+  connecting: "Connecting to servers..."
+  message: "Server message: %{message}"
+  lost: "Connection lost, attempting reconnect..."

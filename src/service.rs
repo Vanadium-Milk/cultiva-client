@@ -2,16 +2,20 @@ mod serial;
 mod socket_io;
 
 use crate::service::serial::BoardControl;
-use crate::service::socket_io::{ResponseStatus, on_failure, on_success, report_result, send_data};
+use crate::service::socket_io::{
+    ResponseStatus, authenticate_connection, on_failure, on_success, report_result, send_data,
+    test_connection,
+};
 use common::db_client::{get_readings, insert_reading};
 use common::settings::load_conf;
 use rust_socketio::{ClientBuilder, Payload, RawClient};
 use serde_json::json;
+use std::env::var;
 use std::error::Error;
 use std::io::Error as IoError;
 use std::io::ErrorKind::Deadlock;
 use std::sync::{Arc, Mutex};
-use std::thread::sleep;
+use std::thread::{sleep, spawn};
 use std::time::Duration;
 
 fn register_data(board: Arc<Mutex<BoardControl>>) -> IoError {
@@ -46,6 +50,7 @@ fn register_data(board: Arc<Mutex<BoardControl>>) -> IoError {
 }
 
 pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
+    println!("{}", t!("config.load"));
     let config = load_conf()?;
 
     let board = Arc::new(Mutex::new(BoardControl::new(
@@ -132,34 +137,23 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
         }
     };
 
+    println!("{}", t!("socket_io.connecting"));
     //Initiate a socket.io connection
-    let socket = ClientBuilder::new("http://localhost")
+    let conn = ClientBuilder::new(var("REST_URL").expect(""))
         .on("command", command_callback)
         .on("query", query_callback)
         .on("activation", activation_callback)
         .on("success", on_success)
         .on("failure,", on_failure)
+        .on("authenticate", authenticate_connection)
+        .reconnect(true)
         .reconnect_on_disconnect(true)
-        .reconnect_delay(5, 60)
-        .max_reconnect_attempts(99) //Lower this number on production
         .connect()?;
-
-    //Authentication retry loop
-    loop {
-        sleep(Duration::from_secs(10));
-        match socket_io::authenticate_connection(&socket) {
-            Ok(_) => {
-                println!("{}", t!("socket_io.auth_success"));
-                break;
-            }
-            Err(e) => {
-                eprint!("{}. {}", t!("socket_io.auth_error", error = e), t!("retry"));
-            }
-        }
-    }
 
     //Added delay to ensure serial connection is ready
     sleep(Duration::from_secs(5));
+
+    spawn(|| test_connection(conn));
     register_data(board);
 
     Ok(())

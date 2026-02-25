@@ -33,6 +33,7 @@ config:
   found: "Archivo de configuración encontrado ¿Deseas configurar de nuevo y sobreescribir?"
   saving: "Guardando la configuración"
   load_err: "Fallo al cargar la configuración, use el comando cultiva configure para establecerla"
+  load: "Cargando archivos de configuración..."
 arg_unknown: "Error, argumento no reconocido"
 sensors:
   set_sensors: "Selecciona los sensores que posee tu sistema"
@@ -83,12 +84,19 @@ query:
   sent: "Datos enviados a través del socket"
   send_error: "Error enviando los datos: %{error}"
   retrieve_error: "No se pudo consultar las lecturas %{error}"
-socketio:
+socket_io:
   payload_invalid: "Payload inválido recibido"
-  auth_success: "Autenticación exitosa"
-  auth_error: "No se pudo autenticar la conexión: %{error}"
-  success: "Ack exitoso recibido"
-  failed: "Ack fallido recibido"
+  auth:
+    success: "Token de autenticación enviado, esperando respuesta..."
+    error: "No se pudo autenticar la conexión: %{error}"
+    failed: "Demasiados reinentos de autenticación, desconectando..."
+    read_err: "No se pudo obtener el token de autenticación, use la herramienta de configuración para crearlo"
+  success: "Ack exitoso recibido: %{message}"
+  failed: "Ack fallido recibido: %{message}"
   report:
     success: "Resultado de la operación reportado exitosamente"
     failure: "Fallo al reportar el resultado de la operación %{error}"
+  disconnect_err: "Error, no se pudo cerrar la conection: %{error}"
+  connecting: "Conectando a los servidores..."
+  message: "Mensaje del servidor: %{message}"
+  lost: "Se ha perdido la conexión, intentando reconectar"
