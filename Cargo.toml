@@ -19,6 +19,7 @@ serde_json = "1.0.149"
 rust_socketio = "0.6.0"
 common = {path = "common"}
 nokhwa = { version = "0.10.10", features = ["input-native"] }
+image = "0.25.9"
 
 [package.metadata.i18n]
 available-locales = ["en", "es"]

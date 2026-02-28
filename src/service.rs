@@ -2,7 +2,7 @@ mod capture;
 mod serial;
 mod socket_io;
 
-use crate::service::capture::poll_cam;
+use crate::service::capture::{poll_cam, send_frame};
 use crate::service::serial::BoardControl;
 use crate::service::serial::Modes::{Active, Auto};
 use crate::service::socket_io::{
@@ -164,8 +164,9 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
         .on("query", query_callback)
         .on("activation", activation_callback)
         .on("success", on_success)
-        .on("failure,", on_failure)
+        .on("error", on_failure)
         .on("authenticate", authenticate_connection)
+        .on("capture", send_frame)
         .reconnect(true)
         .reconnect_on_disconnect(true)
         .connect()?;
