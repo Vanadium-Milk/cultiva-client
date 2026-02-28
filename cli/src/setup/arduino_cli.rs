@@ -10,6 +10,7 @@ fn install_libraries() -> Result<(), IoError> {
 
     //Insert the rest of the libraries in this function
     execute_command("arduino-cli", &["lib", "install", "DHT sensor library"])?;
+    execute_command("arduino-cli", &["lib", "install", "Sensirion I2C SCD30"])?;
     Ok(())
 }
 
