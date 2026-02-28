@@ -97,3 +97,6 @@ socket_io:
   connecting: "Connecting to servers..."
   message: "Server message: %{message}"
   lost: "Connection lost, attempting reconnect..."
+capture:
+  success: "Saved current frame"
+  failed: "Failed to save frame: %{error}"

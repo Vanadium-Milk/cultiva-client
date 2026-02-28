@@ -22,6 +22,7 @@ RUN apt-get install -y g++-aarch64-linux-gnu
 RUN apt-get install -y pkg-config
 RUN apt-get install -y libssl-dev:$CROSS_DEB_ARCH
 RUN apt-get install -y libudev-dev:$CROSS_DEB_ARCH
+RUN apt-get install -y libclang1
 
 RUN ln -sf /usr/bin/aarch64-linux-gnu-pkg-config /usr/bin/pkg-config
 

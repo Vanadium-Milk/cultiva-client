@@ -1,6 +1,8 @@
+mod capture;
 mod serial;
 mod socket_io;
 
+use crate::service::capture::poll_cam;
 use crate::service::serial::BoardControl;
 use crate::service::serial::Modes::{Active, Auto};
 use crate::service::socket_io::{
@@ -172,6 +174,7 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
     sleep(Duration::from_secs(5));
 
     spawn(|| test_connection(conn));
+    spawn(poll_cam);
     register_data(board);
 
     Ok(())

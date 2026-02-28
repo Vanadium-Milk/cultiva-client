@@ -100,3 +100,6 @@ socket_io:
   connecting: "Conectando a los servidores..."
   message: "Mensaje del servidor: %{message}"
   lost: "Se ha perdido la conexión, intentando reconectar"
+capture:
+  success: "Guardado el frame actual"
+  failed: "Fallo al guardar el frame: %{error}"

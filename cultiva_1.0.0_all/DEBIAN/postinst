@@ -7,8 +7,8 @@ handle_error() {
 
 trap 'handle_error' ERR
 
-if [ ! -d "/var/lib/cultiva" ]; then
-  mkdir /var/lib/cultiva;
+if [ ! -d "/var/lib/cultiva/captures" ]; then
+  mkdir -p /var/lib/cultiva/captures;
 fi
 if [ ! -d "/etc/cultiva" ]; then
   mkdir /etc/cultiva;
