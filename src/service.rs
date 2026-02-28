@@ -2,6 +2,7 @@ mod serial;
 mod socket_io;
 
 use crate::service::serial::BoardControl;
+use crate::service::serial::Modes::{Active, Auto};
 use crate::service::socket_io::{
     ResponseStatus, authenticate_connection, on_failure, on_success, report_result, send_data,
     test_connection,
@@ -66,23 +67,33 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
     //Callback to pass the port value to the command handling function
     let command_callback = move |payload: Payload, socket: RawClient| {
         if let Payload::Text(text) = &payload
-            && text.len() >= 2
+            && text.len() >= 3
             && let Some(response_id) = text[0].as_str()
+            && let Some(mode) = text[1].as_str()
         {
             match comm_arc.lock() {
-                Ok(mut locked) => match locked.set_activation(&text[1]) {
-                    Ok(_) => {
-                        report_result(
+                Ok(mut locked) => {
+                    let result = match mode {
+                        "auto" => locked.set_auto_modes(&text[2]),
+                        _ => locked.set_activation(&text[2]),
+                    };
+                    match result {
+                        Ok(_) => {
+                            report_result(
+                                socket,
+                                response_id,
+                                ResponseStatus::Success,
+                                "Command performed successfully",
+                            );
+                        }
+                        Err(e) => report_result(
                             socket,
                             response_id,
-                            ResponseStatus::Success,
-                            "Command performed successfully",
-                        );
+                            ResponseStatus::Failed,
+                            &e.to_string(),
+                        ),
                     }
-                    Err(e) => {
-                        report_result(socket, response_id, ResponseStatus::Failed, &e.to_string())
-                    }
-                },
+                }
                 Err(e) => {
                     eprintln!("{}", t!("serial.lock_error", error = e));
                 }
@@ -119,15 +130,22 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
         if let Payload::Text(text) = &payload
             && text.len() >= 2
             && let Some(response_id) = text[0].as_str()
+            && let Some(mode) = text[1].as_str()
         {
             match act_arc.lock() {
-                Ok(locked) => send_data(
-                    &client,
-                    json!({
-                        "id": response_id,
-                        "data": locked.state
-                    }),
-                ),
+                Ok(mut locked) => {
+                    let info = match mode {
+                        "auto" => Auto,
+                        _ => Active,
+                    };
+                    send_data(
+                        &client,
+                        json!({
+                            "id": response_id,
+                            "data": locked.get_activation(info)
+                        }),
+                    )
+                }
                 Err(e) => {
                     eprintln!("{}", t!("serial.lock_error", error = e));
                 }

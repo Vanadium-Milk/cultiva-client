@@ -1,7 +1,8 @@
 use common::db_client::Reading;
-use common::settings::{Sensors, load_conf};
+use common::settings::{Actuators, Sensors, load_conf};
 use serde::{Deserialize, Serialize};
 use serialport::SerialPort;
+use std::collections::HashMap;
 use std::error::Error;
 use std::io::ErrorKind::{InvalidData, Unsupported};
 use std::io::{Read, Write};
@@ -20,6 +21,7 @@ struct Command {
 pub(super) struct BoardControl {
     port: Box<dyn SerialPort>,
     pub(super) state: ActivationState,
+    pub(super) auto_modes: ActivationState,
 }
 
 #[derive(Default, Serialize)]
@@ -31,17 +33,86 @@ pub(super) struct ActivationState {
     shading: bool,
 }
 
+pub(super) enum Modes {
+    Active,
+    Auto,
+}
+
 impl ActivationState {
     pub(super) fn new() -> Self {
         Default::default()
     }
 }
+
 impl BoardControl {
     pub(super) fn new(port: Box<dyn SerialPort>) -> Self {
         BoardControl {
             port,
             state: ActivationState::new(),
+            //Default is everything on auto for an easier usage
+            auto_modes: ActivationState {
+                irrigator: true,
+                heater: true,
+                lighting: true,
+                uv: true,
+                shading: true,
+            },
         }
+    }
+
+    pub(super) fn get_activation(&mut self, mode: Modes) -> HashMap<String, bool> {
+        let mut data: HashMap<String, bool> = HashMap::new();
+
+        match load_conf() {
+            Ok(config) => {
+                let board_data = match mode {
+                    Modes::Active => &self.state,
+                    Modes::Auto => &self.auto_modes,
+                };
+
+                for a in config.physical_interface.actuators {
+                    match a {
+                        Actuators::Irrigator => {
+                            data.insert("irrigator".to_string(), board_data.irrigator);
+                        }
+                        Actuators::Heater => {
+                            data.insert("heater".to_string(), board_data.heater);
+                        }
+                        Actuators::Lighting => {
+                            data.insert("lighting".to_string(), board_data.lighting);
+                        }
+                        Actuators::UV => {
+                            data.insert("uv".to_string(), board_data.uv);
+                        }
+                        Actuators::Shading => {
+                            data.insert("shading".to_string(), board_data.shading);
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("{}", e);
+            }
+        }
+
+        data
+    }
+
+    pub(super) fn set_auto_modes(
+        &mut self,
+        command: &serde_json::value::Value,
+    ) -> Result<(), Box<dyn Error>> {
+        let spec: Command = serde_json::from_value(command.clone())?;
+
+        let auto = &mut self.auto_modes;
+        //Change provided options, keep the ones unspecified as they are
+        auto.irrigator = spec.irrigator.unwrap_or(auto.irrigator);
+        auto.heater = spec.heater.unwrap_or(auto.heater);
+        auto.lighting = spec.lighting.unwrap_or(auto.lighting);
+        auto.uv = spec.uv.unwrap_or(auto.uv);
+        auto.shading = spec.shading.unwrap_or(auto.shading);
+
+        Ok(())
     }
 
     //Turn on or off the different actuators
