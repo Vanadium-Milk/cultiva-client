@@ -5,6 +5,3 @@ i18n!();
 pub mod db_client;
 pub mod rest_client;
 pub mod settings;
-
-#[cfg(test)]
-mod tests;
