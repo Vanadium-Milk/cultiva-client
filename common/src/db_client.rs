@@ -117,6 +117,7 @@ mod tests {
     use std::thread::sleep;
     use std::time::Duration;
 
+    #[test]
     fn create() -> Result<(), Error> {
         //Table creation ----------------------------------------------------------------------------
         println!("Creating database tables...");
@@ -124,6 +125,8 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
     fn insert() -> Result<(), Error> {
         //Data insertion ---------------------------------------------------------------------------
         println!("Testing data insertion");
@@ -143,6 +146,7 @@ mod tests {
         Ok(())
     }
 
+    #[test]
     fn select() -> Result<(), Error> {
         //Data querying ----------------------------------------------------------------------------
         println!("Testing data querying");
