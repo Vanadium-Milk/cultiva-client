@@ -123,11 +123,11 @@ impl From<IO> for IOFlags {
 }
 
 pub fn load_conf() -> Result<Settings, Box<dyn std::error::Error>> {
-    if !std::fs::exists("/etc/cultiva/cultiva.toml")? {
+    if !std::fs::exists("/etc/cultiva/settings.toml")? {
         return Err(Box::new(Error::new(NotFound, t!("config.load_err"))));
     }
     let settings = Config::builder()
-        .add_source(File::with_name("/etc/cultiva/cultiva.toml"))
+        .add_source(File::with_name("/etc/cultiva/settings.toml"))
         .build()?
         .try_deserialize::<Settings>()?;
 

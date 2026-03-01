@@ -6,7 +6,7 @@ use std::io::Error as ioError;
 
 pub(super) fn save_conf(config: Settings) -> Result<(), Box<dyn Error>> {
     let content = toml::to_string(&config)?;
-    fs::write("/etc/cultiva/cultiva.toml", content)?;
+    fs::write("/etc/cultiva/settings.toml", content)?;
 
     Ok(())
 }
