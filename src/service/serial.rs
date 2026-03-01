@@ -1,11 +1,12 @@
-use common::db_client::Reading;
+use common::db_client::{Reading, insert_reading};
 use common::settings::{Actuators, Sensors, load_conf};
 use serde::{Deserialize, Serialize};
 use serialport::SerialPort;
 use std::collections::HashMap;
 use std::error::Error;
-use std::io::ErrorKind::{InvalidData, Unsupported};
-use std::io::{Read, Write};
+use std::io::ErrorKind::{Deadlock, InvalidData, Unsupported};
+use std::io::{Error as IoError, Read, Write};
+use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -256,5 +257,36 @@ impl BoardControl {
             }
         }
         Ok(read)
+    }
+}
+
+pub(super) fn register_data(board: Arc<Mutex<BoardControl>>) -> IoError {
+    //Polling loop with delay
+    let mut cycle = Duration::from_secs(10);
+    loop {
+        //Adding sleep before the lock, so the mutex stays available
+        sleep(cycle);
+        cycle = Duration::from_secs(10);
+
+        let locked = board.lock();
+        match locked {
+            Ok(mut locked_board) => match locked_board.poll_sensors() {
+                Ok(read) => match insert_reading(read) {
+                    Ok(_) => {
+                        println!("{}", t!("serial.inserted"));
+                        cycle = Duration::from_mins(30);
+                    }
+                    Err(e) => {
+                        eprintln!("{}. {}", t!("serial.insert_error", error = e), t!("retry"));
+                    }
+                },
+                Err(err) => {
+                    eprintln!("{}, {}", t!("serial.input_error", error = err), t!("retry"));
+                }
+            },
+            Err(e) => {
+                return IoError::new(Deadlock, format!("{}", t!("error.fatal", error = e)));
+            }
+        }
     }
 }

@@ -3,54 +3,21 @@ mod serial;
 mod socket_io;
 
 use crate::service::capture::{poll_cam, send_frame};
-use crate::service::serial::BoardControl;
 use crate::service::serial::Modes::{Active, Auto};
+use crate::service::serial::{BoardControl, register_data};
 use crate::service::socket_io::{
     ResponseStatus, authenticate_connection, on_failure, on_success, report_result, send_data,
     test_connection,
 };
-use common::db_client::{get_readings, insert_reading};
+use common::db_client::get_readings;
 use common::settings::load_conf;
 use rust_socketio::{ClientBuilder, Payload, RawClient};
 use serde_json::json;
 use std::env::var;
 use std::error::Error;
-use std::io::Error as IoError;
-use std::io::ErrorKind::Deadlock;
 use std::sync::{Arc, Mutex};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
-
-fn register_data(board: Arc<Mutex<BoardControl>>) -> IoError {
-    //Polling loop with delay
-    let mut cycle = Duration::from_secs(10);
-    loop {
-        //Adding sleep before the lock, so the mutex stays available
-        sleep(cycle);
-        cycle = Duration::from_secs(10);
-
-        let locked = board.lock();
-        match locked {
-            Ok(mut locked_board) => match locked_board.poll_sensors() {
-                Ok(read) => match insert_reading(read) {
-                    Ok(_) => {
-                        println!("{}", t!("serial.inserted"));
-                        cycle = Duration::from_mins(30);
-                    }
-                    Err(e) => {
-                        eprintln!("{}. {}", t!("serial.insert_error", error = e), t!("retry"));
-                    }
-                },
-                Err(err) => {
-                    eprintln!("{}, {}", t!("serial.input_error", error = err), t!("retry"));
-                }
-            },
-            Err(e) => {
-                return IoError::new(Deadlock, format!("{}", t!("error.fatal", error = e)));
-            }
-        }
-    }
-}
 
 pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
     println!("{}", t!("config.load"));
