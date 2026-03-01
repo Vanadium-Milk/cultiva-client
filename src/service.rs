@@ -9,6 +9,7 @@ use crate::service::socket_io::{
     ResponseStatus, authenticate_connection, on_failure, on_success, report_result, send_data,
     test_connection,
 };
+use common::context::{get_context, set_context};
 use common::db_client::get_readings;
 use common::settings::load_conf;
 use rust_socketio::{ClientBuilder, Payload, RawClient};
@@ -18,6 +19,74 @@ use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
+
+fn on_query(payload: Payload, raw_client: RawClient) {
+    if let Payload::Text(text) = &payload
+        && text.len() >= 2
+        && let Some(response_id) = text[0].as_str()
+        && let Some(amount) = text[1].as_u64()
+    {
+        match get_readings(amount) {
+            Ok(readings) => send_data(
+                &raw_client,
+                json!({
+                    "id": response_id,
+                    "data": readings
+                }),
+            ),
+            Err(e) => {
+                eprintln!("{}", t!("query.retrieve_error", error = e));
+            }
+        }
+    } else {
+        eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
+    }
+}
+
+fn on_context(payload: Payload, raw_client: RawClient) {
+    if let Payload::Text(text) = &payload
+        && text.len() >= 2
+        && let Some(response_id) = text[0].as_str()
+    {
+        if let Some(_flag) = text[1].as_str() {
+            match get_context() {
+                Ok(context) => send_data(
+                    &raw_client,
+                    json!({
+                        "id": response_id,
+                        "data": context
+                    }),
+                ),
+                Err(e) => {
+                    eprintln!("{}", t!("context.load_err", error = e));
+                }
+            }
+        } else {
+            let status;
+            let message;
+            match serde_json::from_value(text[1].clone()) {
+                Ok(context) => {
+                    if let Err(e) = set_context(context) {
+                        status = ResponseStatus::Failed;
+                        message = e.to_string();
+                        eprintln!("{}", t!("context.save_err", error = e));
+                    } else {
+                        status = ResponseStatus::Success;
+                        message = "Success saving context information".to_string();
+                    }
+                }
+                Err(e) => {
+                    status = ResponseStatus::Failed;
+                    message = e.to_string();
+                    eprintln!("{}", t!("context.parse_err", error = e));
+                }
+            }
+            report_result(raw_client, response_id, status, &message)
+        }
+    } else {
+        eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
+    }
+}
 
 pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
     println!("{}", t!("config.load"));
@@ -72,29 +141,6 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let query_callback = |payload: Payload, client: RawClient| {
-        if let Payload::Text(text) = &payload
-            && text.len() >= 2
-            && let Some(response_id) = text[0].as_str()
-            && let Some(amount) = text[1].as_u64()
-        {
-            match get_readings(amount) {
-                Ok(readings) => send_data(
-                    &client,
-                    json!({
-                        "id": response_id,
-                        "data": readings
-                    }),
-                ),
-                Err(e) => {
-                    eprintln!("{}", t!("query.retrieve_error", error = e));
-                }
-            }
-        } else {
-            eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
-        }
-    };
-
     let activation_callback = move |payload: Payload, client: RawClient| {
         if let Payload::Text(text) = &payload
             && text.len() >= 2
@@ -128,12 +174,13 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
     //Initiate a socket.io connection
     let conn = ClientBuilder::new(var("REST_URL").expect(""))
         .on("command", command_callback)
-        .on("query", query_callback)
+        .on("query", on_query)
         .on("activation", activation_callback)
         .on("success", on_success)
         .on("error", on_failure)
         .on("authenticate", authenticate_connection)
         .on("capture", send_frame)
+        .on("context", on_context)
         .reconnect(true)
         .reconnect_on_disconnect(true)
         .connect()?;

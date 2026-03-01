@@ -103,3 +103,7 @@ socket_io:
 capture:
   success: "Guardado el frame actual"
   failed: "Fallo al guardar el frame: %{error}"
+context:
+  load_err: "Failed to retrieve context information"
+  parse_err: "Contexto proporcionado inválido: %{error}"
+  save_err: "No se pudo guardar la información de contexto: %{error}"
