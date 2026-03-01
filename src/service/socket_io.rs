@@ -81,8 +81,8 @@ pub(super) fn authenticate_connection(payload: Payload, client: RawClient) {
     }
 }
 
-pub(super) fn send_data(socket: &RawClient, payload: Value) {
-    match socket.emit("response", payload) {
+pub(super) fn send_data(socket: &RawClient, data: Value) {
+    match socket.emit("response", data) {
         Ok(_) => {
             println!("{}", t!("query.sent"));
         }
