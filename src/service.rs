@@ -206,7 +206,7 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
 
     println!("{}", t!("socket_io.connecting"));
     //Initiate a socket.io connection
-    let conn = ClientBuilder::new(var("REST_URL").expect(""))
+    let conn = ClientBuilder::new(var("REST_URL").expect(t!("no_env", var_name = "REST_URL").as_ref()))
         .on("command", command_callback)
         .on("query", on_query)
         .on("activation", activation_callback)

@@ -20,7 +20,7 @@ pub async fn register_account(
     password: &str,
     username: &str,
 ) -> Result<Response, reqwest::Error> {
-    let url = format!("{}/users", var("REST_URL").expect(""));
+    let url = format!("{}/users", var("REST_URL").expect(t!("no_env", var_name = "REST_URL").as_ref()));
 
     let client = Client::new();
 
@@ -35,7 +35,7 @@ pub async fn register_account(
 }
 
 pub async fn login_account(email: &str, password: &str) -> Result<Response, reqwest::Error> {
-    let url = format!("{}/users/login", var("REST_URL").expect(""));
+    let url = format!("{}/users/login", var("REST_URL").expect(t!("no_env", var_name = "REST_URL").as_ref()));
 
     let client = Client::new();
     let mut user_login = HashMap::new();

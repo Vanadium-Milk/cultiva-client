@@ -3,6 +3,7 @@ _version: 1
 db_setup: "Inicializando base de datos...."
 db_panic: "Error creando la base de datos, asegurese de ejecutar con permisos de usuario root: %{error}"
 setup_ini: "Inicializando configuración..."
+no_env: "Variable de entorno faltante: %{var_name}. Abortando"
 online:
   prompt: "Este proyecto cuenta con servidores oficiales para facilitar la conectividad, pero puedes optar por usar
   tu dispositivo como servidor independiente y establecer tus conexiones manualmente ¿Te gustaría conectarte a los

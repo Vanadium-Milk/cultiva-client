@@ -8,7 +8,7 @@ ExecStart=/usr/bin/cultiva
 Restart=on-failure
 RestartSec=120
 LoadCredentialEncrypted=CULTIVAJWT:/etc/cultiva/jwt.cred
-Environment=JWT=%d/CULTIVAJWT
+Environment=JWT=%d/CULTIVAJWT REST_URL=https://cultiva-backend.onrender.com
 
 [Install]
 WantedBy=multi-user.target

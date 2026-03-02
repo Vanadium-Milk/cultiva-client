@@ -2,6 +2,7 @@ _version: 1
 db_setup: "Setting up database..."
 db_panic: "Error creating the database, make sure to run with root permissions: %{error}"
 setup_ini: "Initializing setup..."
+no_env: "Missing environment variable: %{var_name}. Aborting"
 online:
   prompt: "This project runs with official servers to facilitate connectivity, but alternatively you can use your
   device as a standalone server and manually set up your own connections. Would you like to connect to official server?
