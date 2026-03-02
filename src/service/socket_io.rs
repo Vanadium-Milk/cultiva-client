@@ -1,18 +1,10 @@
 use rust_socketio::client::Client;
 use rust_socketio::{Payload, RawClient};
-use serde::Serialize;
 use serde_json::{Value, json};
 use std::env::var;
 use std::fs::read_to_string;
 use std::thread::sleep;
 use std::time::Duration;
-
-//Not bool because There'll be more statuses probably in the future
-#[derive(Serialize)]
-pub(super) enum ResponseStatus {
-    Success,
-    Failed,
-}
 
 fn payload_to_string(payload: Payload) -> String {
     if let Payload::Text(content) = payload {
@@ -92,20 +84,15 @@ pub(super) fn send_data(socket: &RawClient, data: Value) {
     }
 }
 
-pub(super) fn report_result(
-    socket: RawClient,
-    response_id: &str,
-    result: ResponseStatus,
-    message: &str,
-) {
+pub(super) fn report_result(socket: RawClient, response_id: &str, result: bool, message: &str) {
     let res = socket.emit(
         "response",
         json!({
             "id": response_id,
             "data": {
-                "status": result,
                 "message": message
-            }
+            },
+            "success": result
         }),
     );
 

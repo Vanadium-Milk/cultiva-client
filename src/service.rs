@@ -2,12 +2,11 @@ mod capture;
 mod serial;
 mod socket_io;
 
-use crate::service::capture::{poll_cam, send_frame};
+use crate::service::capture::{poll_cam, save_frame};
 use crate::service::serial::Modes::{Active, Auto};
 use crate::service::serial::{BoardControl, register_data};
 use crate::service::socket_io::{
-    ResponseStatus, authenticate_connection, on_failure, on_success, report_result, send_data,
-    test_connection,
+    authenticate_connection, on_failure, on_success, report_result, send_data, test_connection,
 };
 use common::context::{get_context, set_context};
 use common::db_client::get_readings;
@@ -16,6 +15,7 @@ use rust_socketio::{ClientBuilder, Payload, RawClient};
 use serde_json::json;
 use std::env::var;
 use std::error::Error;
+use std::fs::{read, read_dir};
 use std::sync::{Arc, Mutex};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
@@ -31,10 +31,12 @@ fn on_query(payload: Payload, raw_client: RawClient) {
                 &raw_client,
                 json!({
                     "id": response_id,
-                    "data": readings
+                    "data": readings,
+                    "success": true
                 }),
             ),
             Err(e) => {
+                report_result(raw_client, response_id, false, &e.to_string());
                 eprintln!("{}", t!("query.retrieve_error", error = e));
             }
         }
@@ -54,11 +56,13 @@ fn on_context(payload: Payload, raw_client: RawClient) {
                     &raw_client,
                     json!({
                         "id": response_id,
-                        "data": context
+                        "data": context,
+                        "success": true
                     }),
                 ),
                 Err(e) => {
                     eprintln!("{}", t!("context.load_err", error = e));
+                    report_result(raw_client, response_id, false, &e.to_string());
                 }
             }
         } else {
@@ -67,16 +71,16 @@ fn on_context(payload: Payload, raw_client: RawClient) {
             match serde_json::from_value(text[1].clone()) {
                 Ok(context) => {
                     if let Err(e) = set_context(context) {
-                        status = ResponseStatus::Failed;
+                        status = false;
                         message = e.to_string();
                         eprintln!("{}", t!("context.save_err", error = e));
                     } else {
-                        status = ResponseStatus::Success;
+                        status = true;
                         message = "Success saving context information".to_string();
                     }
                 }
                 Err(e) => {
-                    status = ResponseStatus::Failed;
+                    status = false;
                     message = e.to_string();
                     eprintln!("{}", t!("context.parse_err", error = e));
                 }
@@ -85,6 +89,39 @@ fn on_context(payload: Payload, raw_client: RawClient) {
         }
     } else {
         eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
+    }
+}
+
+pub(super) fn on_capture(payload: Payload, client: RawClient) {
+    //Save frame when image is requested
+    if let Err(e) = save_frame() {
+        //If capture fails simply use the most recent one instead
+        eprintln!("{}", t!("capture.failed", error = e));
+    }
+
+    if let Payload::Text(text) = &payload
+        && !text.is_empty()
+        && let Some(response_id) = text[0].as_str()
+    {
+        if let Ok(paths) = read_dir("/var/lib/cultiva/captures/")
+            && let Some(last) = paths.last()
+            && let Ok(entry) = last
+            && let Ok(img) = read(entry.path())
+        {
+            send_data(
+                &client,
+                json!({
+                "id": response_id,
+                "data": {
+                        "buffer": img
+                    },
+                "success": true
+                }),
+            );
+        } else {
+            eprintln!("capture.load_err");
+            report_result(client, response_id, false, &t!("capture.load_err"));
+        }
     }
 }
 
@@ -120,16 +157,11 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
                             report_result(
                                 socket,
                                 response_id,
-                                ResponseStatus::Success,
+                                true,
                                 "Command performed successfully",
                             );
                         }
-                        Err(e) => report_result(
-                            socket,
-                            response_id,
-                            ResponseStatus::Failed,
-                            &e.to_string(),
-                        ),
+                        Err(e) => report_result(socket, response_id, false, &e.to_string()),
                     }
                 }
                 Err(e) => {
@@ -157,12 +189,14 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
                         &client,
                         json!({
                             "id": response_id,
-                            "data": locked.get_activation(info)
+                            "data": locked.get_activation(info),
+                            "success": true
                         }),
                     )
                 }
                 Err(e) => {
                     eprintln!("{}", t!("serial.lock_error", error = e));
+                    report_result(client, response_id, false, &e.to_string());
                 }
             }
         } else {
@@ -179,7 +213,7 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
         .on("success", on_success)
         .on("error", on_failure)
         .on("authenticate", authenticate_connection)
-        .on("capture", send_frame)
+        .on("capture", on_capture)
         .on("context", on_context)
         .reconnect(true)
         .reconnect_on_disconnect(true)

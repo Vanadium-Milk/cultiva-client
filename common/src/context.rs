@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::io::Error as IoError;
-use std::io::ErrorKind::NotFound;
+use std::io::ErrorKind::{NotFound, UnexpectedEof};
 
 pub fn set_context(context: HashMap<String, String>) -> Result<(), Box<dyn Error>> {
     let content = toml::to_string(&context)?;
@@ -20,6 +20,8 @@ pub fn get_context() -> Result<HashMap<String, String>, Box<dyn Error>> {
         .add_source(File::with_name("/etc/cultiva/context.toml"))
         .build()?
         .try_deserialize::<HashMap<String, String>>()?;
-
+    if context.is_empty() {
+        return Err(Box::new(IoError::new(UnexpectedEof, t!("context.no_data"))));
+    }
     Ok(context)
 }

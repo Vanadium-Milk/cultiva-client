@@ -100,7 +100,9 @@ socket_io:
 capture:
   success: "Saved current frame"
   failed: "Failed to save frame: %{error}"
+  load_err: "Error loading last frame"
 context:
   load_err: "Failed to retrieve context information"
   parse_err: "Invalid context input: %{error}"
   save_err: "Couldn't save context information: %{error}"
+  no_data: "Context information file is empty"

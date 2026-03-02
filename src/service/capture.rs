@@ -4,10 +4,7 @@ use nokhwa::pixel_format::RgbFormat;
 use nokhwa::utils::RequestedFormatType::AbsoluteHighestResolution;
 use nokhwa::utils::{CameraIndex, RequestedFormat};
 use nokhwa::{Camera, NokhwaError};
-use rust_socketio::{Payload, RawClient};
-use serde_json::json;
 use std::error::Error;
-use std::fs::{read, read_dir};
 use std::io::Cursor;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
@@ -30,7 +27,7 @@ fn get_cam() -> Result<Camera, NokhwaError> {
     Ok(camera)
 }
 
-fn save_frame() -> Result<(), Box<dyn Error>> {
+pub(super) fn save_frame() -> Result<(), Box<dyn Error>> {
     let frame = get_cam()?.frame()?;
 
     //Resize the frame into a more portable size
@@ -58,30 +55,6 @@ pub(super) fn poll_cam() {
         } else {
             sleep(Duration::from_hours(3));
         }
-    }
-}
-
-pub(super) fn send_frame(payload: Payload, client: RawClient) {
-    //Save frame when image is requested
-    if let Err(e) = save_frame() {
-        eprintln!("{}. {}", t!("capture.failed", error = e), t!("retry"));
-    }
-
-    if let Payload::Text(text) = &payload
-        && !text.is_empty()
-        && let Some(response_id) = text[0].as_str()
-    {
-        let paths = read_dir("/var/lib/cultiva/captures/").unwrap();
-        let last = paths.last().unwrap().unwrap().path();
-        dbg!(&last);
-        let img = read(last).unwrap();
-
-        let send = json!({
-        "id": response_id,
-        "data": {
-            "buffer": img
-        }});
-        client.emit("response", send).unwrap();
     }
 }
 
