@@ -2,6 +2,7 @@ use reqwest::{Client, Response};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::env::var;
+use std::error::Error;
 
 #[derive(Deserialize)]
 pub struct Output {
@@ -19,8 +20,8 @@ pub async fn register_account(
     email: &str,
     password: &str,
     username: &str,
-) -> Result<Response, reqwest::Error> {
-    let url = format!("{}/users", var("REST_URL").expect(t!("no_env", var_name = "REST_URL").as_ref()));
+) -> Result<Response, Box<dyn Error>> {
+    let url = format!("{}/users", var("REST_URL")?);
 
     let client = Client::new();
 
@@ -34,8 +35,8 @@ pub async fn register_account(
     Ok(res)
 }
 
-pub async fn login_account(email: &str, password: &str) -> Result<Response, reqwest::Error> {
-    let url = format!("{}/users/login", var("REST_URL").expect(t!("no_env", var_name = "REST_URL").as_ref()));
+pub async fn login_account(email: &str, password: &str) -> Result<Response, Box<dyn Error>> {
+    let url = format!("{}/users/login", var("REST_URL")?);
 
     let client = Client::new();
     let mut user_login = HashMap::new();

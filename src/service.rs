@@ -93,12 +93,6 @@ fn on_context(payload: Payload, raw_client: RawClient) {
 }
 
 pub(super) fn on_capture(payload: Payload, client: RawClient) {
-    //Save frame when image is requested
-    if let Err(e) = save_frame() {
-        //If capture fails simply use the most recent one instead
-        eprintln!("{}", t!("capture.failed", error = e));
-    }
-
     if let Payload::Text(text) = &payload
         && !text.is_empty()
         && let Some(response_id) = text[0].as_str()
@@ -142,7 +136,7 @@ pub(super) fn on_capture(payload: Payload, client: RawClient) {
                 json!({
                 "id": response_id,
                 "data": {
-                        "buffer": img
+                        "buffer": image_data
                     },
                 "success": true
                 }),
@@ -235,7 +229,7 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
 
     println!("{}", t!("socket_io.connecting"));
     //Initiate a socket.io connection
-    let conn = ClientBuilder::new(var("REST_URL").expect(t!("no_env", var_name = "REST_URL").as_ref()))
+    let conn = ClientBuilder::new(var("REST_URL")?)
         .on("command", command_callback)
         .on("query", on_query)
         .on("activation", activation_callback)
