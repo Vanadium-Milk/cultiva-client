@@ -18,7 +18,7 @@ use std::error::Error;
 use std::fs::{read, read_dir};
 use std::sync::{Arc, Mutex};
 use std::thread::{sleep, spawn};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 fn on_query(payload: Payload, raw_client: RawClient) {
     if let Payload::Text(text) = &payload
@@ -103,11 +103,40 @@ pub(super) fn on_capture(payload: Payload, client: RawClient) {
         && !text.is_empty()
         && let Some(response_id) = text[0].as_str()
     {
-        if let Ok(paths) = read_dir("/var/lib/cultiva/captures/")
-            && let Some(last) = paths.last()
-            && let Ok(entry) = last
-            && let Ok(img) = read(entry.path())
-        {
+        let mut buffer = None;
+        //Save frame when image is requested
+        match save_frame() {
+            Ok(name) => {
+                //If capture succeeds simply return the image
+                if let Ok(img) = read(format!("var/lib/cultiva/captures/{}.jpg", name)) {
+                    buffer = Some(img);
+                }
+            }
+            Err(e) => {
+                //If capture fails simply use the most recent one instead
+                eprintln!("{}", t!("capture.failed", error = e));
+
+                //This monstrosity returns the last created file
+                if let Ok(paths) = read_dir("/var/lib/cultiva/captures/")
+                    && let Some(last) = paths.max_by_key(|entry| {
+                        if let Ok(val) = entry
+                            && let Ok(meta) = val.metadata()
+                            && let Ok(time) = meta.created()
+                        {
+                            time
+                        } else {
+                            SystemTime::UNIX_EPOCH
+                        }
+                    })
+                    && let Ok(entry) = last
+                    && let Ok(img) = read(entry.path())
+                {
+                    buffer = Some(img);
+                }
+            }
+        }
+
+        if let Some(image_data) = buffer {
             send_data(
                 &client,
                 json!({

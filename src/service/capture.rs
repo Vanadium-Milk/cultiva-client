@@ -27,7 +27,7 @@ fn get_cam() -> Result<Camera, NokhwaError> {
     Ok(camera)
 }
 
-pub(super) fn save_frame() -> Result<(), Box<dyn Error>> {
+pub(super) fn save_frame() -> Result<String, Box<dyn Error>> {
     let frame = get_cam()?.frame()?;
 
     //Resize the frame into a more portable size
@@ -36,14 +36,18 @@ pub(super) fn save_frame() -> Result<(), Box<dyn Error>> {
         .decode()?;
     let resized = src_image.resize(1024, 576, FilterType::Lanczos3);
 
-    let img_name = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
+    let img_name = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)?
+        .as_secs()
+        .to_string();
+
     resized.save_with_format(
-        format!("/var/lib/cultiva/captures/{}.jpg", img_name.as_secs()),
+        format!("/var/lib/cultiva/captures/{}.jpg", img_name),
         ImageFormat::Jpeg,
     )?;
 
     println!("{}", t!("capture.success"));
-    Ok(())
+    Ok(img_name)
 }
 
 pub(super) fn poll_cam() {
