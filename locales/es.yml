@@ -63,7 +63,11 @@ board:
   compile: "Compilando codigo fuente para el nucleo de arduino: %{core}..."
   compile_prompt: "¿Deseas compilar y subir codigo automaticamente a tu microcontrolador? (Recomendado)\nPuedes hacerlo
   más tarde con el comando sudo cultiva compile"
+  unavailable: "Funciones de microcontrolador no disponibles"
 serial:
+  initializing: "Inicializando conexión serial en el puerto: %{port}..."
+  init_error: "Error al inicializar la conexión serial: %{error}\nEl servicio se mantendrá ejecutandose, pero sin las
+  funciones de microcontrolador"
   invalid_data: "Respuesta inválida recibida"
   input_error: "Error al recibir los datos del puerto serial: %{error}"
   insert_error: "Error al añadir información a la base de datos: %{error}"

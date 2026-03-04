@@ -92,7 +92,7 @@ fn on_context(payload: Payload, raw_client: RawClient) {
     }
 }
 
-pub(super) fn on_capture(payload: Payload, client: RawClient) {
+fn on_capture(payload: Payload, client: RawClient) {
     if let Payload::Text(text) = &payload
         && !text.is_empty()
         && let Some(response_id) = text[0].as_str()
@@ -102,7 +102,7 @@ pub(super) fn on_capture(payload: Payload, client: RawClient) {
         match save_frame() {
             Ok(name) => {
                 //If capture succeeds simply return the image
-                if let Ok(img) = read(format!("var/lib/cultiva/captures/{}.jpg", name)) {
+                if let Ok(img) = read(format!("/var/lib/cultiva/captures/{}.jpg", name)) {
                     buffer = Some(img);
                 }
             }
@@ -142,7 +142,7 @@ pub(super) fn on_capture(payload: Payload, client: RawClient) {
                 }),
             );
         } else {
-            eprintln!("capture.load_err");
+            eprintln!("{}", t!("capture.load_err"));
             report_result(client, response_id, false, &t!("capture.load_err"));
         }
     }
@@ -152,15 +152,24 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
     println!("{}", t!("config.load"));
     let config = load_conf()?;
 
-    let board = Arc::new(Mutex::new(BoardControl::new(
-        serialport::new(config.board.port, 9600)
-            .timeout(Duration::from_secs(5))
-            .open()?,
-    )));
-
-    //command and activation arc of the arduino board struct
-    let act_arc = Arc::clone(&board);
-    let comm_arc = Arc::clone(&board);
+    println!("{}", t!("serial.initializing", port = config.board.port));
+    let mut poll_arc = None;
+    let mut act_arc = None;
+    let mut comm_arc = None;
+    match serialport::new(config.board.port, 9600)
+        .timeout(Duration::from_secs(5))
+        .open()
+    {
+        Ok(port) => {
+            let board = Some(Arc::new(Mutex::new(BoardControl::new(port))));
+            poll_arc = board.clone();
+            act_arc = board.clone();
+            comm_arc = board.clone();
+        }
+        Err(e) => {
+            eprintln!("{}", t!("serial.init_error", error = e));
+        }
+    }
 
     //Callback to pass the port value to the command handling function
     let command_callback = move |payload: Payload, socket: RawClient| {
@@ -169,27 +178,21 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
             && let Some(response_id) = text[0].as_str()
             && let Some(mode) = text[1].as_str()
         {
-            match comm_arc.lock() {
-                Ok(mut locked) => {
-                    let result = match mode {
-                        "auto" => locked.set_auto_modes(&text[2]),
-                        _ => locked.set_activation(&text[2]),
-                    };
-                    match result {
-                        Ok(_) => {
-                            report_result(
-                                socket,
-                                response_id,
-                                true,
-                                "Command performed successfully",
-                            );
-                        }
-                        Err(e) => report_result(socket, response_id, false, &e.to_string()),
+            if let Some(board) = &comm_arc
+                && let Ok(mut locked) = board.lock()
+            {
+                let result = match mode {
+                    "auto" => locked.set_auto_modes(&text[2]),
+                    _ => locked.set_activation(&text[2]),
+                };
+                match result {
+                    Ok(_) => {
+                        report_result(socket, response_id, true, "Command performed successfully");
                     }
+                    Err(e) => report_result(socket, response_id, false, &e.to_string()),
                 }
-                Err(e) => {
-                    eprintln!("{}", t!("serial.lock_error", error = e));
-                }
+            } else {
+                report_result(socket, response_id, false, t!("serial.unavailable").as_ref());
             }
         } else {
             eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
@@ -202,25 +205,23 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
             && let Some(response_id) = text[0].as_str()
             && let Some(mode) = text[1].as_str()
         {
-            match act_arc.lock() {
-                Ok(mut locked) => {
-                    let info = match mode {
-                        "auto" => Auto,
-                        _ => Active,
-                    };
-                    send_data(
-                        &client,
-                        json!({
-                            "id": response_id,
-                            "data": locked.get_activation(info),
-                            "success": true
-                        }),
-                    )
-                }
-                Err(e) => {
-                    eprintln!("{}", t!("serial.lock_error", error = e));
-                    report_result(client, response_id, false, &e.to_string());
-                }
+            if let Some(board) = &act_arc
+                && let Ok(mut locked) = board.lock()
+            {
+                let info = match mode {
+                    "auto" => Auto,
+                    _ => Active,
+                };
+                send_data(
+                    &client,
+                    json!({
+                        "id": response_id,
+                        "data": locked.get_activation(info),
+                        "success": true
+                    }),
+                )
+            } else {
+                report_result(client, response_id, false, t!("serial.unavailable").as_ref());
             }
         } else {
             eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
@@ -245,9 +246,11 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
     //Added delay to ensure serial connection is ready
     sleep(Duration::from_secs(5));
 
-    spawn(|| test_connection(conn));
     spawn(poll_cam);
-    register_data(board);
+    if let Some(board) = poll_arc {
+        spawn(|| register_data(board));
+    }
+    test_connection(conn);
 
     Ok(())
 }

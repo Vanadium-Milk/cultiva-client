@@ -63,11 +63,14 @@ board:
   compile_prompt: "Do you want to automatically compile and upload supported code into your microcontroller? (Recommended)
   \nYou can do it later by using sudo cultiva compile"
 serial:
+  initializing: "Initializing serial connection on port: %{port}..."
+  init_error: "Error initializing serial connection: %{error}\nService will be kept running, but with microcontroller features disabled"
   invalid_data: "Invalid input received"
   input_error: "Error while receiving serial data: %{error}"
   insert_error: "Error while adding data into database: %{error}"
   inserted: "Variable data registered in database"
   lock_error: "Could not lock the serial port: %{error}"
+  unavailable: "Microcontroller features unavailable"
 retry: "Retrying..."
 error:
   fatal: "Fatal error: %{error}"
