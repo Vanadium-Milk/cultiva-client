@@ -181,9 +181,10 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
             if let Some(board) = &comm_arc
                 && let Ok(mut locked) = board.lock()
             {
+                let command = text[2].clone();
                 let result = match mode {
-                    "auto" => locked.set_auto_modes(&text[2]),
-                    _ => locked.set_activation(&text[2]),
+                    "auto" => locked.set_auto_modes(command),
+                    _ => locked.set_activation(command),
                 };
                 match result {
                     Ok(_) => {
@@ -206,7 +207,7 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
             && let Some(mode) = text[1].as_str()
         {
             if let Some(board) = &act_arc
-                && let Ok(mut locked) = board.lock()
+                && let Ok(locked) = board.lock()
             {
                 let info = match mode {
                     "auto" => Auto,

@@ -10,8 +10,8 @@ use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::Duration;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Command {
+#[derive(Serialize, Deserialize, Default, Copy, Clone)]
+pub(super) struct ActivationState {
     irrigator: Option<bool>,
     heater: Option<bool>,
     lighting: Option<bool>,
@@ -25,15 +25,6 @@ pub(super) struct BoardControl {
     pub(super) auto_modes: ActivationState,
 }
 
-#[derive(Default, Serialize)]
-pub(super) struct ActivationState {
-    irrigator: bool,
-    heater: bool,
-    lighting: bool,
-    uv: bool,
-    shading: bool,
-}
-
 pub(super) enum Modes {
     Active,
     Auto,
@@ -45,73 +36,91 @@ impl ActivationState {
     }
 }
 
+impl From<ActivationState> for HashMap<String, bool> {
+    //Map only existing values
+    fn from(value: ActivationState) -> Self {
+        let mut hm = HashMap::new();
+        if let Some(irrigator) = value.irrigator {
+            hm.insert("irrigator".to_string(), irrigator);
+        }
+        if let Some(heater) = value.heater {
+            hm.insert("heater".to_string(), heater);
+        }
+        if let Some(lighting) = value.lighting {
+            hm.insert("lighting".to_string(), lighting);
+        }
+        if let Some(uv) = value.uv {
+            hm.insert("uv".to_string(), uv);
+        }
+        if let Some(shading) = value.shading {
+            hm.insert("shading".to_string(), shading);
+        }
+        hm
+    }
+}
+
 impl BoardControl {
     pub(super) fn new(port: Box<dyn SerialPort>) -> Self {
-        BoardControl {
-            port,
-            state: ActivationState::new(),
-            //Default is everything on auto for an easier usage
-            auto_modes: ActivationState {
-                irrigator: true,
-                heater: true,
-                lighting: true,
-                uv: true,
-                shading: true,
-            },
-        }
-    }
-
-    pub(super) fn get_activation(&mut self, mode: Modes) -> HashMap<String, bool> {
-        let mut data: HashMap<String, bool> = HashMap::new();
-
-        match load_conf() {
-            Ok(config) => {
-                let board_data = match mode {
-                    Modes::Active => &self.state,
-                    Modes::Auto => &self.auto_modes,
-                };
-
-                for a in config.physical_interface.actuators {
-                    match a {
-                        Actuators::Irrigator => {
-                            data.insert("irrigator".to_string(), board_data.irrigator);
-                        }
-                        Actuators::Heater => {
-                            data.insert("heater".to_string(), board_data.heater);
-                        }
-                        Actuators::Lighting => {
-                            data.insert("lighting".to_string(), board_data.lighting);
-                        }
-                        Actuators::UV => {
-                            data.insert("uv".to_string(), board_data.uv);
-                        }
-                        Actuators::Shading => {
-                            data.insert("shading".to_string(), board_data.shading);
-                        }
+        //Set only supported actuators, otherwise None
+        let mut auto = ActivationState::new();
+        let mut active = ActivationState::new();
+        if let Ok(config) = load_conf() {
+            for a in config.physical_interface.actuators {
+                match a {
+                    Actuators::Irrigator => {
+                        auto.irrigator = Some(true);
+                        active.irrigator = Some(false);
+                    }
+                    Actuators::Heater => {
+                        auto.heater = Some(true);
+                        active.heater = Some(false);
+                    }
+                    Actuators::Lighting => {
+                        auto.lighting = Some(true);
+                        active.lighting = Some(false);
+                    }
+                    Actuators::UV => {
+                        auto.uv = Some(true);
+                        active.uv = Some(false);
+                    }
+                    Actuators::Shading => {
+                        auto.shading = Some(true);
+                        active.shading = Some(false);
                     }
                 }
             }
-            Err(e) => {
-                eprintln!("{}", e);
-            }
         }
 
-        data
+        BoardControl {
+            port,
+            state: active,
+            auto_modes: auto,
+        }
+    }
+
+    pub(super) fn get_activation(&self, mode: Modes) -> HashMap<String, bool> {
+        match mode {
+            Modes::Active => self.state.into(),
+            Modes::Auto => self.auto_modes.into(),
+        }
+    }
+
+    //Changes the state only for spec values that contain Some()
+    fn mutate_to_spec(state: &mut ActivationState, spec: ActivationState) {
+        state.irrigator = state.irrigator.and(spec.irrigator);
+        state.heater = state.heater.and(spec.heater);
+        state.lighting = state.lighting.and(spec.lighting);
+        state.uv = state.uv.and(spec.uv);
+        state.shading = state.shading.and(spec.shading);
     }
 
     pub(super) fn set_auto_modes(
         &mut self,
-        command: &serde_json::value::Value,
+        command: serde_json::value::Value,
     ) -> Result<(), Box<dyn Error>> {
-        let spec: Command = serde_json::from_value(command.clone())?;
+        let spec: ActivationState = serde_json::from_value(command)?;
 
-        let auto = &mut self.auto_modes;
-        //Change provided options, keep the ones unspecified as they are
-        auto.irrigator = spec.irrigator.unwrap_or(auto.irrigator);
-        auto.heater = spec.heater.unwrap_or(auto.heater);
-        auto.lighting = spec.lighting.unwrap_or(auto.lighting);
-        auto.uv = spec.uv.unwrap_or(auto.uv);
-        auto.shading = spec.shading.unwrap_or(auto.shading);
+        Self::mutate_to_spec(&mut self.auto_modes, spec);
 
         Ok(())
     }
@@ -119,32 +128,27 @@ impl BoardControl {
     //Turn on or off the different actuators
     pub(super) fn set_activation(
         &mut self,
-        command: &serde_json::value::Value,
+        command: serde_json::value::Value,
     ) -> Result<(), Box<dyn Error>> {
-        let spec: Command = serde_json::from_value(command.clone())?;
+        let spec: ActivationState = serde_json::from_value(command)?;
 
         let mut sum = 1;
 
-        //Change provided options, keep the ones unspecified as they are
-        self.state.irrigator = spec.irrigator.unwrap_or(self.state.irrigator);
-        self.state.heater = spec.heater.unwrap_or(self.state.heater);
-        self.state.lighting = spec.lighting.unwrap_or(self.state.lighting);
-        self.state.uv = spec.uv.unwrap_or(self.state.uv);
-        self.state.shading = spec.shading.unwrap_or(self.state.shading);
+        Self::mutate_to_spec(&mut self.state, spec);
 
-        if self.state.irrigator {
+        if self.state.irrigator.is_some_and(|x| x) {
             sum += 16;
         }
-        if self.state.heater {
+        if self.state.heater.is_some_and(|x| x) {
             sum += 8;
         }
-        if self.state.lighting {
+        if self.state.lighting.is_some_and(|x| x) {
             sum += 4;
         }
-        if self.state.uv {
+        if self.state.uv.is_some_and(|x| x) {
             sum += 2;
         }
-        if self.state.shading {
+        if self.state.shading.is_some_and(|x| x) {
             sum += 1;
         }
 
