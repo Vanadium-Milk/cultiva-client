@@ -2,7 +2,7 @@ mod capture;
 mod serial;
 mod socket_io;
 
-use crate::service::capture::{poll_cam, save_frame};
+use crate::service::capture::{get_image_buffer, poll_cam};
 use crate::service::serial::Modes::{Active, Auto};
 use crate::service::serial::{BoardControl, register_data};
 use crate::service::socket_io::{
@@ -97,50 +97,24 @@ fn on_capture(payload: Payload, client: RawClient) {
         && !text.is_empty()
         && let Some(response_id) = text[0].as_str()
     {
-        let mut buffer = None;
-        //Save frame when image is requested
-        match save_frame() {
-            Ok(name) => {
-                //If capture succeeds simply return the image
-                if let Ok(img) = read(format!("/var/lib/cultiva/captures/{}.jpg", name)) {
-                    buffer = Some(img);
-                }
-            }
-            Err(e) => {
-                //If capture fails simply use the most recent one instead
-                eprintln!("{}", t!("capture.failed", error = e));
-
-                //This monstrosity returns the last created file
-                if let Ok(paths) = read_dir("/var/lib/cultiva/captures/")
-                    && let Some(last) = paths.max_by_key(|entry| {
-                        if let Ok(val) = entry
-                            && let Ok(meta) = val.metadata()
-                            && let Ok(time) = meta.created()
-                        {
-                            time
-                        } else {
-                            SystemTime::UNIX_EPOCH
-                        }
-                    })
-                    && let Ok(entry) = last
-                    && let Ok(img) = read(entry.path())
-                {
-                    buffer = Some(img);
-                }
-            }
-        }
-
-        if let Some(image_data) = buffer {
-            send_data(
+        match get_image_buffer() {
+            Ok(buffer) => send_data(
                 &client,
                 json!({
                 "id": response_id,
                 "data": {
-                        "buffer": image_data
+                        "buffer": buffer
                     },
                 "success": true
                 }),
             );
+            ),
+            Err(e) => report_result(client, response_id, false, &e.to_string()),
+        }
+    } else {
+        eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
+    }
+}
         } else {
             eprintln!("{}", t!("capture.load_err"));
             report_result(client, response_id, false, &t!("capture.load_err"));

@@ -5,7 +5,10 @@ use nokhwa::utils::RequestedFormatType::AbsoluteHighestResolution;
 use nokhwa::utils::{CameraIndex, RequestedFormat};
 use nokhwa::{Camera, NokhwaError};
 use std::error::Error;
+use std::fs::{read, read_dir};
+use std::io;
 use std::io::Cursor;
+use std::io::ErrorKind::NotFound;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 
@@ -58,6 +61,38 @@ pub(super) fn poll_cam() {
             sleep(Duration::from_mins(1))
         } else {
             sleep(Duration::from_hours(3));
+        }
+    }
+}
+
+pub(super) fn get_image_buffer() -> Result<Vec<u8>, io::Error> {
+    //Save frame when image is requested
+    match save_frame() {
+        Ok(name) => {
+            //If capture succeeds simply return the image
+            Ok(read(format!("/var/lib/cultiva/captures/{}.jpg", name))?)
+        }
+        Err(e) => {
+            //If capture fails simply use the most recent one instead
+            eprintln!("{}", t!("capture.failed", error = e));
+
+            //This monstrosity returns the last created file
+            let paths = read_dir("/var/lib/cultiva/captures/")?;
+
+            if let Some(last) = paths.max_by_key(|entry| {
+                if let Ok(val) = entry
+                    && let Ok(meta) = val.metadata()
+                    && let Ok(time) = meta.created()
+                {
+                    time
+                } else {
+                    SystemTime::UNIX_EPOCH
+                }
+            }) {
+                Ok(read(last?.path())?)
+            } else {
+                Err(io::Error::new(NotFound, t!("capture.load_err")))
+            }
         }
     }
 }
