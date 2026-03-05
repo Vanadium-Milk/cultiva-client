@@ -15,7 +15,6 @@ use rust_socketio::{ClientBuilder, Payload, RawClient};
 use serde_json::json;
 use std::env::var;
 use std::error::Error;
-use std::fs::{read, read_dir};
 use std::sync::{Arc, Mutex};
 use std::thread::{sleep, spawn};
 use std::time::{Duration, SystemTime};
@@ -107,7 +106,6 @@ fn on_capture(payload: Payload, client: RawClient) {
                     },
                 "success": true
                 }),
-            );
             ),
             Err(e) => report_result(client, response_id, false, &e.to_string()),
         }
@@ -151,11 +149,11 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
             && text.len() >= 3
             && let Some(response_id) = text[0].as_str()
             && let Some(mode) = text[1].as_str()
+            && let Ok(command) = serde_json::from_value::<ActivationState>(text[2].clone())
         {
             if let Some(board) = &comm_arc
                 && let Ok(mut locked) = board.lock()
             {
-                let command = text[2].clone();
                 let result = match mode {
                     "auto" => locked.set_auto_modes(command),
                     _ => locked.set_activation(command),
@@ -167,7 +165,12 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
                     Err(e) => report_result(socket, response_id, false, &e.to_string()),
                 }
             } else {
-                report_result(socket, response_id, false, t!("serial.unavailable").as_ref());
+                report_result(
+                    socket,
+                    response_id,
+                    false,
+                    t!("serial.unavailable").as_ref(),
+                );
             }
         } else {
             eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
@@ -196,7 +199,12 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
                     }),
                 )
             } else {
-                report_result(client, response_id, false, t!("serial.unavailable").as_ref());
+                report_result(
+                    client,
+                    response_id,
+                    false,
+                    t!("serial.unavailable").as_ref(),
+                );
             }
         } else {
             eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);

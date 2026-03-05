@@ -1,6 +1,6 @@
 use common::db_client::{Reading, insert_reading};
 use common::settings::{Actuators, Sensors, load_conf};
-use serde::{Deserialize, Serialize};
+use common::state_handling::ActivationState;
 use serialport::SerialPort;
 use std::collections::HashMap;
 use std::error::Error;
@@ -9,15 +9,6 @@ use std::io::{Error as IoError, Read, Write};
 use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::Duration;
-
-#[derive(Serialize, Deserialize, Default, Copy, Clone)]
-pub(super) struct ActivationState {
-    irrigator: Option<bool>,
-    heater: Option<bool>,
-    lighting: Option<bool>,
-    uv: Option<bool>,
-    shading: Option<bool>,
-}
 
 pub(super) struct BoardControl {
     port: Box<dyn SerialPort>,
@@ -28,35 +19,6 @@ pub(super) struct BoardControl {
 pub(super) enum Modes {
     Active,
     Auto,
-}
-
-impl ActivationState {
-    pub(super) fn new() -> Self {
-        Default::default()
-    }
-}
-
-impl From<ActivationState> for HashMap<String, bool> {
-    //Map only existing values
-    fn from(value: ActivationState) -> Self {
-        let mut hm = HashMap::new();
-        if let Some(irrigator) = value.irrigator {
-            hm.insert("irrigator".to_string(), irrigator);
-        }
-        if let Some(heater) = value.heater {
-            hm.insert("heater".to_string(), heater);
-        }
-        if let Some(lighting) = value.lighting {
-            hm.insert("lighting".to_string(), lighting);
-        }
-        if let Some(uv) = value.uv {
-            hm.insert("uv".to_string(), uv);
-        }
-        if let Some(shading) = value.shading {
-            hm.insert("shading".to_string(), shading);
-        }
-        hm
-    }
 }
 
 impl BoardControl {
@@ -116,11 +78,9 @@ impl BoardControl {
 
     pub(super) fn set_auto_modes(
         &mut self,
-        command: serde_json::value::Value,
+        command: ActivationState,
     ) -> Result<(), Box<dyn Error>> {
-        let spec: ActivationState = serde_json::from_value(command)?;
-
-        Self::mutate_to_spec(&mut self.auto_modes, spec);
+        Self::mutate_to_spec(&mut self.auto_modes, command);
 
         Ok(())
     }
@@ -128,13 +88,11 @@ impl BoardControl {
     //Turn on or off the different actuators
     pub(super) fn set_activation(
         &mut self,
-        command: serde_json::value::Value,
+        command: ActivationState,
     ) -> Result<(), Box<dyn Error>> {
-        let spec: ActivationState = serde_json::from_value(command)?;
-
         let mut sum = 1;
 
-        Self::mutate_to_spec(&mut self.state, spec);
+        Self::mutate_to_spec(&mut self.state, command);
 
         if self.state.irrigator.is_some_and(|x| x) {
             sum += 16;
@@ -272,8 +230,7 @@ pub(super) fn register_data(board: Arc<Mutex<BoardControl>>) -> IoError {
         sleep(cycle);
         cycle = Duration::from_secs(10);
 
-        let locked = board.lock();
-        match locked {
+        match board.lock() {
             Ok(mut locked_board) => match locked_board.poll_sensors() {
                 Ok(read) => match insert_reading(read) {
                     Ok(_) => {
