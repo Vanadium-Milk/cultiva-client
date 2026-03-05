@@ -1,18 +1,11 @@
-use crate::shell::encrypt_key;
 use common::settings::Settings;
 use std::error::Error;
 use std::fs;
-use std::io::Error as ioError;
 
 pub(super) fn save_conf(config: Settings) -> Result<(), Box<dyn Error>> {
     let content = toml::to_string(&config)?;
     fs::write("/etc/cultiva/settings.toml", content)?;
 
-    Ok(())
-}
-
-pub(super) fn save_jwt(token: String) -> Result<(), ioError> {
-    encrypt_key(&token, "CULTIVAJWT")?;
     Ok(())
 }
 

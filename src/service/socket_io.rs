@@ -1,8 +1,7 @@
+use common::credentials::get_jwt;
 use rust_socketio::client::Client;
 use rust_socketio::{Payload, RawClient};
 use serde_json::{Value, json};
-use std::env::var;
-use std::fs::read_to_string;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -42,33 +41,33 @@ pub(super) fn authenticate_connection(payload: Payload, client: RawClient) {
         t!("socket_io.message", message = payload_to_string(payload))
     );
 
-    let cred_dir = var("JWT");
-    if let Ok(cred) = cred_dir
-        && let Ok(token) = read_to_string(cred)
-    {
-        let auth = "Bearer ".to_owned() + &token;
+    match get_jwt() {
+        Ok(token) => {
+            let auth = "Bearer ".to_owned() + &token;
 
-        //10 attempts at reconnection
-        for _i in 0..10 {
-            match client.emit("authenticate", auth.trim_end()) {
-                Ok(_) => {
-                    println!("{}", t!("socket_io.auth.success"));
-                    return;
-                }
-                Err(e) => {
-                    eprint!("{}. {}", t!("socket_io.auth.error", error = e), t!("retry"));
-                    sleep(Duration::from_secs(10));
+            //10 attempts at reconnection
+            for _i in 0..10 {
+                match client.emit("authenticate", auth.as_str()) {
+                    Ok(_) => {
+                        println!("{}", t!("socket_io.auth.success"));
+                        return;
+                    }
+                    Err(e) => {
+                        eprint!("{}. {}", t!("socket_io.auth.error", error = e), t!("retry"));
+                        sleep(Duration::from_secs(10));
+                    }
                 }
             }
+            eprintln!("{}", t!("socket_io.auth.failed"));
+            if let Err(e) = client.disconnect() {
+                eprintln!("{}", t!("socket_io.disconnect_err", error = e));
+            }
         }
-        eprintln!("{}", t!("socket_io.auth.failed"));
-        if let Err(e) = client.disconnect() {
-            eprintln!("{}", t!("socket_io.disconnect_err", error = e));
-        }
-    } else {
-        eprintln!("{}", t!("socket_io.auth.read_err"));
-        if let Err(e) = client.disconnect() {
-            eprintln!("{}", t!("socket_io.disconnect_err", error = e));
+        Err(error) => {
+            eprintln!("{}", t!("socket_io.auth.read_err", error = error));
+            if let Err(e) = client.disconnect() {
+                eprintln!("{}", t!("socket_io.disconnect_err", error = e));
+            }
         }
     }
 }
