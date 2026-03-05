@@ -1,6 +1,7 @@
 mod capture;
 mod serial;
 mod socket_io;
+pub mod supervision;
 
 use crate::service::capture::{get_image_buffer, poll_cam};
 use crate::service::serial::Modes::{Active, Auto};
@@ -8,16 +9,18 @@ use crate::service::serial::{BoardControl, register_data};
 use crate::service::socket_io::{
     authenticate_connection, on_failure, on_success, report_result, send_data, test_connection,
 };
+use crate::service::supervision::evaluate;
 use common::context::{get_context, set_context};
 use common::db_client::get_readings;
 use common::settings::load_conf;
+use common::state_handling::ActivationState;
 use rust_socketio::{ClientBuilder, Payload, RawClient};
 use serde_json::json;
 use std::env::var;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
-use std::thread::{sleep, spawn};
-use std::time::{Duration, SystemTime};
+use std::thread::spawn;
+use std::time::Duration;
 
 fn on_query(payload: Payload, raw_client: RawClient) {
     if let Payload::Text(text) = &payload
@@ -113,35 +116,43 @@ fn on_capture(payload: Payload, client: RawClient) {
         eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
     }
 }
-        } else {
-            eprintln!("{}", t!("capture.load_err"));
-            report_result(client, response_id, false, &t!("capture.load_err"));
+
+async fn supervise(board: Arc<Mutex<BoardControl>>) {
+    if let Ok(readings) = get_readings(20)
+        && let Ok(context) = get_context()
+        && let Ok(image) = get_image_buffer()
+    {
+        //Prevent mutex being locked while awaiting by wrapping it in this block
+        let eval = match board.lock() {
+            Ok(locked) => evaluate(readings, context, locked.state, image),
+            Err(e) => {
+                eprintln!("{}, {}", t!("serial.lock_error"), e);
+                return;
+            }
+        };
+
+        match eval.await {
+            Ok(evaluation) => {
+                let Ok(mut locked) = board.lock() else {
+                    eprintln!("{}", t!("serial.lock_error"));
+                    return;
+                };
+                if let Err(e) = locked.set_activation(evaluation) {
+                    eprintln!("{}", t!("serial.command.error", error = e));
+                }
+            }
+            Err(e) => {
+                eprintln!("{}", t!("supervision.net_error", error = e));
+            }
         }
+    } else {
+        eprintln!("{}", t!("supervision.no_data"));
     }
 }
 
-pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
-    println!("{}", t!("config.load"));
-    let config = load_conf()?;
-
-    println!("{}", t!("serial.initializing", port = config.board.port));
-    let mut poll_arc = None;
-    let mut act_arc = None;
-    let mut comm_arc = None;
-    match serialport::new(config.board.port, 9600)
-        .timeout(Duration::from_secs(5))
-        .open()
-    {
-        Ok(port) => {
-            let board = Some(Arc::new(Mutex::new(BoardControl::new(port))));
-            poll_arc = board.clone();
-            act_arc = board.clone();
-            comm_arc = board.clone();
-        }
-        Err(e) => {
-            eprintln!("{}", t!("serial.init_error", error = e));
-        }
-    }
+fn initiate_socket(board: Option<Arc<Mutex<BoardControl>>>) {
+    let comm_arc = board.clone();
+    let act_arc = board.clone();
 
     //Callback to pass the port value to the command handling function
     let command_callback = move |payload: Payload, socket: RawClient| {
@@ -212,28 +223,55 @@ pub(super) fn start_tasks() -> Result<(), Box<dyn Error>> {
     };
 
     println!("{}", t!("socket_io.connecting"));
-    //Initiate a socket.io connection
-    let conn = ClientBuilder::new(var("REST_URL")?)
-        .on("command", command_callback)
-        .on("query", on_query)
-        .on("activation", activation_callback)
-        .on("success", on_success)
-        .on("error", on_failure)
-        .on("authenticate", authenticate_connection)
-        .on("capture", on_capture)
-        .on("context", on_context)
-        .reconnect(true)
-        .reconnect_on_disconnect(true)
-        .connect()?;
+    if let Ok(url) = var("REST_URL") {
+        //Initiate a socket.io connection
+        match ClientBuilder::new(url)
+            .on("command", command_callback)
+            .on("query", on_query)
+            .on("activation", activation_callback)
+            .on("success", on_success)
+            .on("error", on_failure)
+            .on("authenticate", authenticate_connection)
+            .on("capture", on_capture)
+            .on("context", on_context)
+            .reconnect(true)
+            .reconnect_on_disconnect(true)
+            .connect()
+        {
+            Ok(connection) => {
+                test_connection(connection);
+                return;
+            }
+            Err(e) => eprintln!("{}", t!("socket_io.error", error = e)),
+        }
+    } else {
+        eprintln!("{}", t!("no_env", variable_name = "REST_URL"));
+    }
+    eprintln!("{}", t!("socket_io.disable"));
+}
 
-    //Added delay to ensure serial connection is ready
-    sleep(Duration::from_secs(5));
+pub(super) async fn start_tasks() -> Result<(), Box<dyn Error>> {
+    println!("{}", t!("config.load"));
+    let config = load_conf()?;
+
+    println!("{}", t!("serial.initializing", port = config.board.port));
+    let board_arc = match serialport::new(config.board.port, 9600)
+        .timeout(Duration::from_secs(5))
+        .open()
+    {
+        Ok(port) => Some(Arc::new(Mutex::new(BoardControl::new(port)))),
+        Err(e) => {
+            eprintln!("{}", t!("serial.init_error", error = e));
+            None
+        }
+    };
 
     spawn(poll_cam);
-    if let Some(board) = poll_arc {
-        spawn(|| register_data(board));
+    if let Some(board) = board_arc.clone() {
+        supervise(board.clone()).await;
+        spawn(move || register_data(board));
     }
-    test_connection(conn);
+    spawn(move || initiate_socket(board_arc.clone()));
 
     Ok(())
 }

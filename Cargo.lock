@@ -706,6 +706,7 @@ dependencies = [
 name = "cultiva-client"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "common",
  "image",
  "nokhwa",
@@ -715,6 +716,7 @@ dependencies = [
  "serde_json",
  "serialport",
  "sudo",
+ "tokio",
 ]
 
 [[package]]

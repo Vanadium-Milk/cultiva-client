@@ -124,10 +124,10 @@ impl BoardControl {
         let res = self.port.write_all(encoded.as_bytes());
         match res {
             Ok(_) => {
-                println!("{}", t!("command.sent", command = encoded));
+                println!("{}", t!("serial.command.sent", command = encoded));
             }
             Err(e) => {
-                println!("{}", t!("command.error", error = e));
+                println!("{}", t!("serial.command.error", error = e));
                 return Err(e.into());
             }
         }
@@ -139,20 +139,20 @@ impl BoardControl {
                 let response = String::from_utf8(buffer);
                 match response {
                     Err(e) => {
-                        eprintln!("{}", t!("command.unchecked", error = e));
+                        eprintln!("{}", t!("serial.command.unchecked", error = e));
                     }
                     Ok(value) => {
                         if value != encoded {
                             eprintln!(
                                 "{}",
-                                t!("command.unmatched", sent = encoded, received = value)
+                                t!("serial.command.unmatched", sent = encoded, received = value)
                             );
                         }
                     }
                 }
             }
             Err(e) => {
-                eprintln!("{}", t!("command.unchecked", error = e));
+                eprintln!("{}", t!("serial.command.unchecked", error = e));
             }
         }
         self.port.flush()?;
@@ -223,6 +223,9 @@ impl BoardControl {
 }
 
 pub(super) fn register_data(board: Arc<Mutex<BoardControl>>) -> IoError {
+    //Added delay because sometimes it starts before finishing initializing the connection
+    sleep(Duration::from_secs(5));
+
     //Polling loop with delay
     let mut cycle = Duration::from_secs(10);
     loop {

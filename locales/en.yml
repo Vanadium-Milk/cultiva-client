@@ -3,6 +3,7 @@ db_setup: "Setting up database..."
 db_panic: "Error creating the database, make sure to run with root permissions: %{error}"
 setup_ini: "Initializing setup..."
 no_env: "Missing environment variable: %{var_name}. Aborting"
+write_err: "Couldn't write into file: %{filename}, %{error}"
 online:
   prompt: "This project runs with official servers to facilitate connectivity, but alternatively you can use your
   device as a standalone server and manually set up your own connections. Would you like to connect to official server?
@@ -69,18 +70,18 @@ serial:
   input_error: "Error while receiving serial data: %{error}"
   insert_error: "Error while adding data into database: %{error}"
   inserted: "Variable data registered in database"
-  lock_error: "Could not lock the serial port: %{error}"
+  lock_error: "Error: Could not lock the serial port"
   unavailable: "Microcontroller features unavailable"
+  command:
+    sent: "Sent command: %{command}"
+    result: "Reporting result: %{result}"
+    error: "Error while sending command: %{error}"
+    unchecked: "WARNING, no confirmation received by the microcontroller, commands could be being ignored: %{err}"
+    unmatched: "WARNING microcontroller may be receiving wrong inputs. Sent: %{sent}, Received: %{received}"
 retry: "Retrying..."
 error:
   fatal: "Fatal error: %{error}"
   over_limit: "Unexpected number > %{limit}: %{number}"
-command:
-  sent: "Sent command: %{command}"
-  result: "Reporting result: %{result}"
-  error: "Error while sending command: %{error}"
-  unchecked: "WARNING, no confirmation received by the microcontroller, commands could be being ignored: %{err}"
-  unmatched: "WARNING microcontroller may be receiving wrong inputs. Sent: %{sent}, Received: %{received}"
 query:
   sent: "Sent data over socket connection"
   send_error: "Error sending data: %{error}"
@@ -101,6 +102,8 @@ socket_io:
   connecting: "Connecting to servers..."
   message: "Server message: %{message}"
   lost: "Connection lost, attempting reconnect..."
+  disable: "Couldn't establish socket.io connection, disabling online features"
+  error: "Socket.io connection error: %{error}"
 capture:
   success: "Saved current frame"
   failed: "Failed to save frame: %{error}"
@@ -110,3 +113,8 @@ context:
   parse_err: "Invalid context input: %{error}"
   save_err: "Couldn't save context information: %{error}"
   no_data: "Context information file is empty"
+supervision:
+  net_error: "Couldn't access supervision LLM: %{error}"
+  no_data: "Couldn't get data for evaluation"
+  parse_err: "Unable to parse evaluation response"
+  request_err: "Server returned error response: %{message}"

@@ -4,6 +4,7 @@ db_setup: "Inicializando base de datos...."
 db_panic: "Error creando la base de datos, asegurese de ejecutar con permisos de usuario root: %{error}"
 setup_ini: "Inicializando configuración..."
 no_env: "Variable de entorno faltante: %{var_name}. Abortando"
+write_err: "No se pudo escribir en el archivo: %{filename}, %{error}"
 online:
   prompt: "Este proyecto cuenta con servidores oficiales para facilitar la conectividad, pero puedes optar por usar
   tu dispositivo como servidor independiente y establecer tus conexiones manualmente ¿Te gustaría conectarte a los
@@ -63,7 +64,6 @@ board:
   compile: "Compilando codigo fuente para el nucleo de arduino: %{core}..."
   compile_prompt: "¿Deseas compilar y subir codigo automaticamente a tu microcontrolador? (Recomendado)\nPuedes hacerlo
   más tarde con el comando sudo cultiva compile"
-  unavailable: "Funciones de microcontrolador no disponibles"
 serial:
   initializing: "Inicializando conexión serial en el puerto: %{port}..."
   init_error: "Error al inicializar la conexión serial: %{error}\nEl servicio se mantendrá ejecutandose, pero sin las
@@ -72,19 +72,20 @@ serial:
   input_error: "Error al recibir los datos del puerto serial: %{error}"
   insert_error: "Error al añadir información a la base de datos: %{error}"
   inserted: "Medición insertada en base de datos"
-  lock_error: "No se pudo tomar control del puerto serial: %{error}"
+  lock_error: "Error: No se pudo tomar control del puerto serial"
+  unavailable: "Características de microcontrolador no disponibles"
+  command:
+    sent: "Comando enviado: %{command}"
+    result: "Reportando resultado: %{result}"
+    error: "Error al enviar comando: %{error}"
+    unchecked: "ADVERTENCIA no se recibió confirmación por parte del microcontrolador, los comandos pueden estar siendo
+    ignorados %{err}"
+    unmatched: "ADVERTENCIA el microcontrolador puede estar recibiendo señales erroneas. Enviado: %{sent}, Recibido:
+    %{received}"
 retry: "Intentando de nuevo..."
 error:
   fatal: "Error crítico: %{error}"
   over_limit: "Se esperaba un número por debajo de %{limit}, recibido: %{number}"
-command:
-  sent: "Comando enviado: %{command}"
-  result: "Reportando resultado: %{result}"
-  error: "Error al enviar comando: %{error}"
-  unchecked: "ADVERTENCIA no se recibió confirmación por parte del microcontrolador, los comandos pueden estar siendo
-  ignorados %{err}"
-  unmatched: "ADVERTENCIA el microcontrolador puede estar recibiendo señales erroneas. Enviado: %{sent}, Recibido:
-  %{received}"
 query:
   sent: "Datos enviados a través del socket"
   send_error: "Error enviando los datos: %{error}"
@@ -105,6 +106,8 @@ socket_io:
   connecting: "Conectando a los servidores..."
   message: "Mensaje del servidor: %{message}"
   lost: "Se ha perdido la conexión, intentando reconectar"
+  disable: "No se pudo establecer una conexión socket.io, deshabilitando funciones en linea"
+  error: "Error de conexión de socket.io: %{error}"
 capture:
   success: "Guardado el frame actual"
   failed: "Fallo al guardar el frame: %{error}"
@@ -114,3 +117,8 @@ context:
   parse_err: "Contexto proporcionado inválido: %{error}"
   save_err: "No se pudo guardar la información de contexto: %{error}"
   no_data: "La información de contexto está vacía"
+supervision:
+  net_error: "No se pudo acceder al LLM de supervisión: %{error}"
+  no_data: "No se pudo conseguir los datos para realizar la evaluación"
+  parse_err: "No se pudo leer la información de respuesta de la evaluación: %{error}"
+  request_err: "El servidor otorgó una respuesta de error: %{message}"
