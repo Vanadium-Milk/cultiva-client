@@ -94,7 +94,7 @@ socket_io:
     success: "Sent authentication token, awaiting response..."
     error: "Could not authenticate connection: %{error}"
     failed: "Too many reattempts at authentication, going offline..."
-    read_err: "Couldn't get the auth token, use the configuration tool to create it %{error}"
+    read_err: "Couldn't get the auth token, use the configuration tool to create it: %{error}"
   success: "Successive ack received: %{message}"
   failed: "Failed ack received: %{message}"
   report:
@@ -120,3 +120,6 @@ supervision:
   no_data: "Couldn't get data for evaluation"
   parse_err: "Unable to parse evaluation response"
   request_err: "Server returned error response: %{message}"
+  start: "Performing supervision..."
+sched:
+  start: "Scheduling cron jobs..."

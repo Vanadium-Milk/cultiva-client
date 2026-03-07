@@ -9,11 +9,13 @@ use std::error::Error;
 use std::fs::write;
 use std::io;
 use std::io::ErrorKind::Other;
+use serde_json::json;
 
 #[derive(Deserialize)]
 struct SupervisionResponse {
     message: String,
     command: ActivationState,
+    health: String,
 }
 
 pub(super) async fn evaluate(
@@ -28,8 +30,9 @@ pub(super) async fn evaluate(
     if eval.status().is_success() {
         let data = eval.json::<SupervisionResponse>().await?;
 
-        let file = "/var/lib/cultiva/assessment.txt";
-        if let Err(e) = write(file, data.message) {
+        let file = "/var/lib/cultiva/assessment.json";
+        let content = json!({"health": data.health, "message": data.message });
+        if let Err(e) = write(file, content.to_string()) {
             eprintln!("{}", t!("write_err", filename = file, error = e));
         };
 

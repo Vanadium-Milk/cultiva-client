@@ -120,6 +120,7 @@ fn on_capture(payload: Payload, client: RawClient) {
 }
 
 async fn supervise(board: Arc<Mutex<BoardControl>>) {
+    println!("{}", t!("supervision.start"));
     if let Ok(readings) = get_readings(20)
         && let Ok(context) = get_context()
         && let Ok(image) = get_image_buffer()
@@ -225,29 +226,25 @@ fn initiate_socket(board: Option<Arc<Mutex<BoardControl>>>) {
     };
 
     println!("{}", t!("socket_io.connecting"));
-    if let Ok(url) = var("REST_URL") {
-        //Initiate a socket.io connection
-        match ClientBuilder::new(url)
-            .on("command", command_callback)
-            .on("query", on_query)
-            .on("activation", activation_callback)
-            .on("success", on_success)
-            .on("error", on_failure)
-            .on("authenticate", authenticate_connection)
-            .on("capture", on_capture)
-            .on("context", on_context)
-            .reconnect(true)
-            .reconnect_on_disconnect(true)
-            .connect()
-        {
-            Ok(connection) => {
-                test_connection(connection);
-                return;
-            }
-            Err(e) => eprintln!("{}", t!("socket_io.error", error = e)),
+    //Initiate a socket.io connection
+    match ClientBuilder::new(var("REST_URL").unwrap_or("api.proyectocultiva.org".to_string()))
+        .on("command", command_callback)
+        .on("query", on_query)
+        .on("activation", activation_callback)
+        .on("success", on_success)
+        .on("error", on_failure)
+        .on("authenticate", authenticate_connection)
+        .on("capture", on_capture)
+        .on("context", on_context)
+        .reconnect(true)
+        .reconnect_on_disconnect(true)
+        .connect()
+    {
+        Ok(connection) => {
+            test_connection(connection);
+            return;
         }
-    } else {
-        eprintln!("{}", t!("no_env", variable_name = "REST_URL"));
+        Err(e) => eprintln!("{}", t!("socket_io.error", error = e)),
     }
     eprintln!("{}", t!("socket_io.disable"));
 }
@@ -268,23 +265,40 @@ pub(super) async fn start_tasks() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    spawn(poll_cam);
-
-    let sched = JobScheduler::new().await?;
     if let Some(board) = board_arc.clone() {
+        println!("{}", t!("sched.start"));
+        let sched = JobScheduler::new().await?;
+
         let reg_board = board.clone();
         spawn(move || register_data(reg_board));
 
         sched
-            .add(Job::new_async_tz("0 12 * * *", Utc, move |_, _| {
+            .add(Job::new_async_tz("0 0 12 * * *", Utc, move |_, _| {
                 let sup_board = board.clone();
                 Box::pin(async {
                     supervise(sup_board).await;
                 })
             })?)
             .await?;
+
+        sched.start().await?;
     }
+
     spawn(move || initiate_socket(board_arc.clone()));
 
+    poll_cam();
+
     Ok(())
+}
+
+#[tokio::test]
+async fn test_supervision() {
+    //Change it accordingly
+    let device = "/dev/ttyUSB0";
+    let port = serialport::new(device, 9600)
+        .timeout(Duration::from_secs(5))
+        .open()
+        .unwrap();
+
+    supervise(Arc::new(Mutex::new(BoardControl::new(port)))).await;
 }

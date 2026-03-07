@@ -6,7 +6,7 @@ use std::io::{Write, stderr, stdout};
 use std::process::{Command, Stdio};
 
 pub fn get_jwt() -> Result<String, io::Error> {
-    let cred_dir = var("JWT").unwrap_or(Err(io::Error::new(NotFound, t!("no_env")))?);
+    let cred_dir = var("JWT").or(Err(io::Error::new(NotFound, t!("no_env"))))?;
     Ok(read_to_string(cred_dir)?.trim_end().to_owned())
 }
 

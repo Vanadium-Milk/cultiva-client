@@ -98,7 +98,7 @@ socket_io:
     success: "Token de autenticación enviado, esperando respuesta..."
     error: "No se pudo autenticar la conexión: %{error}"
     failed: "Demasiados reinentos de autenticación, desconectando..."
-    read_err: "No se pudo obtener el token de autenticación, use la herramienta de configuración para crearlo"
+    read_err: "No se pudo obtener el token de autenticación, use la herramienta de configuración para crearlo: %{error}"
   success: "Ack exitoso recibido: %{message}"
   failed: "Ack fallido recibido: %{message}"
   report:
@@ -124,3 +124,6 @@ supervision:
   no_data: "No se pudo conseguir los datos para realizar la evaluación"
   parse_err: "No se pudo leer la información de respuesta de la evaluación: %{error}"
   request_err: "El servidor otorgó una respuesta de error: %{message}"
+  start: "Ejecutando supervisión"
+sched:
+  start: "iniciando trabajos cron..."

@@ -72,6 +72,7 @@ pub async fn get_evaluation(
         .bearer_auth(get_jwt()?)
         .send()
         .await
-        .unwrap_or(Err(io::Error::new(HostUnreachable, t!("http.error")))?);
+        .or(Err(io::Error::new(HostUnreachable, t!("http.error"))))?;
+
     Ok(response)
 }
