@@ -10,6 +10,7 @@ use crate::service::socket_io::{
     authenticate_connection, on_failure, on_success, report_result, send_data, test_connection,
 };
 use crate::service::supervision::evaluate;
+use chrono::Utc;
 use common::context::{get_context, set_context};
 use common::db_client::get_readings;
 use common::settings::load_conf;
@@ -21,6 +22,7 @@ use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 use std::time::Duration;
+use tokio_cron_scheduler::{Job, JobScheduler};
 
 fn on_query(payload: Payload, raw_client: RawClient) {
     if let Payload::Text(text) = &payload
@@ -267,9 +269,20 @@ pub(super) async fn start_tasks() -> Result<(), Box<dyn Error>> {
     };
 
     spawn(poll_cam);
+
+    let sched = JobScheduler::new().await?;
     if let Some(board) = board_arc.clone() {
-        supervise(board.clone()).await;
-        spawn(move || register_data(board));
+        let reg_board = board.clone();
+        spawn(move || register_data(reg_board));
+
+        sched
+            .add(Job::new_async_tz("0 12 * * *", Utc, move |_, _| {
+                let sup_board = board.clone();
+                Box::pin(async {
+                    supervise(sup_board).await;
+                })
+            })?)
+            .await?;
     }
     spawn(move || initiate_socket(board_arc.clone()));
 

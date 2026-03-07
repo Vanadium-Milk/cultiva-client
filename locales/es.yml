@@ -5,6 +5,8 @@ db_panic: "Error creando la base de datos, asegurese de ejecutar con permisos de
 setup_ini: "Inicializando configuración..."
 no_env: "Variable de entorno faltante: %{var_name}. Abortando"
 write_err: "No se pudo escribir en el archivo: %{filename}, %{error}"
+http:
+  error: "No se pudo procesar la solicitud HTTP"
 online:
   prompt: "Este proyecto cuenta con servidores oficiales para facilitar la conectividad, pero puedes optar por usar
   tu dispositivo como servidor independiente y establecer tus conexiones manualmente ¿Te gustaría conectarte a los

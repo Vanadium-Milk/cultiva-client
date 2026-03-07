@@ -7,6 +7,8 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::env::var;
 use std::error::Error;
+use std::io;
+use std::io::ErrorKind::HostUnreachable;
 
 #[derive(Deserialize)]
 pub struct Output {
@@ -43,13 +45,17 @@ pub async fn login_account(email: &str, password: &str) -> Result<Response, Box<
     Ok(res)
 }
 
+//Error cannot be boxed due to usage in threaded async
 pub async fn get_evaluation(
     readings: Vec<Reading>,
     context: HashMap<String, String>,
     activation: ActivationState,
     image: String,
-) -> Result<Response, Box<dyn Error>> {
-    let url = format!("{}/supervision", var("REST_URL")?);
+) -> Result<Response, io::Error> {
+    let url = format!(
+        "{}/supervision",
+        var("REST_URL").unwrap_or("api.proyectocultiva.org".to_string())
+    );
 
     //json! macro includes None values as null, I converted it to HashMap first to remove them
     let clean_act: HashMap<String, bool> = activation.into();
@@ -59,11 +65,13 @@ pub async fn get_evaluation(
         "activation": clean_act,
         "image": image
     });
+
     let response = Client::new()
         .post(url)
         .json(&content)
         .bearer_auth(get_jwt()?)
         .send()
-        .await?;
+        .await
+        .unwrap_or(Err(io::Error::new(HostUnreachable, t!("http.error")))?);
     Ok(response)
 }
