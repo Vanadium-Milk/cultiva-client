@@ -37,7 +37,7 @@ pub(super) fn save_frame() -> Result<String, Box<dyn Error>> {
     let src_image = ImageReader::new(Cursor::new(frame.buffer()))
         .with_guessed_format()?
         .decode()?;
-    let resized = src_image.resize(1024, 576, FilterType::Lanczos3);
+    let resized = src_image.resize(864, 486, FilterType::Lanczos3);
 
     let img_name = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)?

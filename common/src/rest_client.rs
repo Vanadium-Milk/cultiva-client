@@ -26,7 +26,10 @@ pub async fn register_account(
     password: &str,
     username: &str,
 ) -> Result<Response, reqwest::Error> {
-    let url = format!("{}/users", var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string()));
+    let url = format!(
+        "{}/users",
+        var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string())
+    );
 
     let user_register =
         HashMap::from([("email", email), ("password", password), ("name", username)]);
@@ -36,7 +39,10 @@ pub async fn register_account(
 }
 
 pub async fn login_account(email: &str, password: &str) -> Result<Response, reqwest::Error> {
-    let url = format!("{}/users/login", var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string()));
+    let url = format!(
+        "{}/users/login",
+        var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string())
+    );
 
     let user_login = HashMap::from([("email", email), ("password", password)]);
     let res = Client::new().post(url).json(&user_login).send().await?;

@@ -10,7 +10,6 @@ use crate::service::socket_io::{
     authenticate_connection, on_failure, on_success, report_result, send_data, test_connection,
 };
 use crate::service::supervision::{evaluate, get_assessment};
-use chrono::Utc;
 use common::context::{get_context, set_context};
 use common::db_client::get_readings;
 use common::settings::load_conf;
@@ -251,19 +250,21 @@ fn initiate_socket(board: Option<Arc<Mutex<BoardControl>>>) {
 
     println!("{}", t!("socket_io.connecting"));
     //Initiate a socket.io connection
-    match ClientBuilder::new(var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string()))
-        .on("command", command_callback)
-        .on("query", on_query)
-        .on("activation", activation_callback)
-        .on("success", on_success)
-        .on("error", on_failure)
-        .on("authenticate", authenticate_connection)
-        .on("capture", on_capture)
-        .on("context", on_context)
-        .on("assessment", on_assessment)
-        .reconnect(true)
-        .reconnect_on_disconnect(true)
-        .connect()
+    match ClientBuilder::new(
+        var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string()),
+    )
+    .on("command", command_callback)
+    .on("query", on_query)
+    .on("activation", activation_callback)
+    .on("success", on_success)
+    .on("error", on_failure)
+    .on("authenticate", authenticate_connection)
+    .on("capture", on_capture)
+    .on("context", on_context)
+    .on("assessment", on_assessment)
+    .reconnect(true)
+    .reconnect_on_disconnect(true)
+    .connect()
     {
         Ok(connection) => {
             test_connection(connection);
@@ -298,12 +299,16 @@ pub(super) async fn start_tasks() -> Result<(), Box<dyn Error>> {
         spawn(move || register_data(reg_board));
 
         sched
-            .add(Job::new_async_tz("0 0 12 * * *", Utc, move |_, _| {
-                let sup_board = board.clone();
-                Box::pin(async {
-                    supervise(sup_board).await;
-                })
-            })?)
+            .add(Job::new_async_tz(
+                "0 0 12 * * *",
+                chrono::Local,
+                move |_, _| {
+                    let sup_board = board.clone();
+                    Box::pin(async {
+                        supervise(sup_board).await;
+                    })
+                },
+            )?)
             .await?;
 
         sched.start().await?;
@@ -326,4 +331,32 @@ async fn test_supervision() {
         .unwrap();
 
     supervise(Arc::new(Mutex::new(BoardControl::new(port)))).await;
+}
+
+#[tokio::test]
+async fn get_scheduling_times() {
+    let sched = JobScheduler::new().await.unwrap();
+
+    sched
+        .add(
+            Job::new_async_tz("1/7 * * * * *", chrono::Local, |uuid, mut l| {
+                Box::pin(async move {
+                    println!("I run async every 7 seconds");
+
+                    // Query the next execution time for this job
+                    let next_tick = l.next_tick_for_job(uuid).await;
+                    match next_tick {
+                        Ok(Some(ts)) => println!("Next time for 7s job is {:?}", ts),
+                        _ => println!("Could not get next tick for 7s job"),
+                    }
+                })
+            })
+            .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    sched.start().await.unwrap();
+
+    tokio::time::sleep(Duration::from_mins(1)).await;
 }
