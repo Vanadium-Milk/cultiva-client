@@ -69,11 +69,13 @@ impl BoardControl {
 
     //Changes the state only for spec values that contain Some()
     fn mutate_to_spec(state: &mut ActivationState, spec: ActivationState) {
-        state.irrigator = state.irrigator.and(spec.irrigator);
-        state.heater = state.heater.and(spec.heater);
-        state.lighting = state.lighting.and(spec.lighting);
-        state.uv = state.uv.and(spec.uv);
-        state.shading = state.shading.and(spec.shading);
+        //I'm so sorry for this abomination, I wanted to do it the cool way, but the project is due
+        //for 3 days
+        state.irrigator = state.irrigator.and(spec.irrigator.or(state.irrigator));
+        state.heater = state.heater.and(spec.heater.or(state.heater));
+        state.lighting = state.lighting.and(spec.lighting.or(state.lighting));
+        state.uv = state.uv.and(spec.uv.or(state.uv));
+        state.shading = state.shading.and(spec.shading.or(state.shading));
     }
 
     pub(super) fn set_auto_modes(
