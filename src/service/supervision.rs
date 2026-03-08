@@ -4,18 +4,19 @@ use common::db_client::Reading;
 use common::rest_client::{Output, get_evaluation};
 use common::state_handling::ActivationState;
 use serde::Deserialize;
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{read_to_string, write};
 use std::io;
 use std::io::ErrorKind::Other;
-use serde_json::{json, Value};
 
 #[derive(Deserialize)]
 struct SupervisionResponse {
     message: String,
     command: ActivationState,
     health: String,
+    advice: Vec<String>,
 }
 
 pub(super) async fn evaluate(
@@ -31,7 +32,8 @@ pub(super) async fn evaluate(
         let data = eval.json::<SupervisionResponse>().await?;
 
         let file = "/var/lib/cultiva/assessment.json";
-        let content = json!({"health": data.health, "message": data.message });
+        let content =
+            json!({"health": data.health, "message": data.message, "advice": data.advice });
         if let Err(e) = write(file, content.to_string()) {
             eprintln!("{}", t!("write_err", filename = file, error = e));
         };
