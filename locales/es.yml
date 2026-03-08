@@ -16,12 +16,12 @@ online:
   confirm_prompt: "Estás seguro de que quieres configurar tu servidor como independiente? No serás capaz de acceder
   desde la aplicación movil a menos que configures un tunel o port forwarding"
 login:
-  disclaimer: "Primero crea una cuenta en www.proyectocultiva.com, después de confirmar tu correo electrónico inicia
+  disclaimer: "Primero crea una cuenta en www.proyectocultiva.org, después de confirmar tu correo electrónico inicia
   sesión con la misma cuenta"
   user: "Email"
   pass: "Contraseña"
   pass_confirm: "Confirma tu cotraseña"
-  registration: "¿Ya tienes una cuenta en www.proyectocultiva.com?"
+  registration: "¿Ya tienes una cuenta en www.proyectocultiva.org?"
   no_acc: "No (Registrarse)"
   acc: "Sí (Iniciar sesión)"
   pass_match_fail: "Las contraseñas no coinciden, intenta de nuevo"
@@ -50,6 +50,7 @@ sensors:
   ph: "Alcalinidad (PH)"
 actuators:
   set_act: "Select which actuadores que posee tu sistema"
+  set_invert: "Debe alguno de estos actuadores actuar al revés (Se apaga al recibir true, enciende al recibir false)"
   water: "Irrigador"
   heat: "Calefacción"
   light: "Luz artificial"

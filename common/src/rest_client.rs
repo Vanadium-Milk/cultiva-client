@@ -6,7 +6,6 @@ use serde::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
 use std::env::var;
-use std::error::Error;
 use std::io;
 use std::io::ErrorKind::HostUnreachable;
 
@@ -26,8 +25,8 @@ pub async fn register_account(
     email: &str,
     password: &str,
     username: &str,
-) -> Result<Response, Box<dyn Error>> {
-    let url = format!("{}/users", var("REST_URL")?);
+) -> Result<Response, reqwest::Error> {
+    let url = format!("{}/users", var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string()));
 
     let user_register =
         HashMap::from([("email", email), ("password", password), ("name", username)]);
@@ -36,8 +35,8 @@ pub async fn register_account(
     Ok(res)
 }
 
-pub async fn login_account(email: &str, password: &str) -> Result<Response, Box<dyn Error>> {
-    let url = format!("{}/users/login", var("REST_URL")?);
+pub async fn login_account(email: &str, password: &str) -> Result<Response, reqwest::Error> {
+    let url = format!("{}/users/login", var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string()));
 
     let user_login = HashMap::from([("email", email), ("password", password)]);
     let res = Client::new().post(url).json(&user_login).send().await?;
@@ -54,7 +53,7 @@ pub async fn get_evaluation(
 ) -> Result<Response, io::Error> {
     let url = format!(
         "{}/supervision",
-        var("REST_URL").unwrap_or("api.proyectocultiva.org".to_string())
+        var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string())
     );
 
     //json! macro includes None values as null, I converted it to HashMap first to remove them

@@ -106,7 +106,12 @@ pub(super) fn compile_microcontroller() -> Result<(), Box<dyn Error>> {
     println!("{}", t!("board.compile", core = config.board.name));
     let flags: IOFlags = config.physical_interface.into();
 
-    arduino_cli::compile_sketch(&config.board.name, flags.sensors_flag, flags.actuators_flag)?;
+    arduino_cli::compile_sketch(
+        &config.board.name,
+        flags.sensors_flag,
+        flags.actuators_flag,
+        flags.inverted_flag,
+    )?;
     arduino_cli::upload_sketch(&config.board.name, &config.board.port)?;
 
     Ok(())
@@ -169,17 +174,28 @@ pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
         .map(|val| val.try_into())
         .collect::<Result<Vec<Sensors>, IoError>>()?;
 
-    let actuators = MultiSelect::new()
+    let act_items = MultiSelect::new().items(vec![
+        t!("actuators.water"),
+        t!("actuators.heat"),
+        t!("actuators.light"),
+        t!("actuators.uv"),
+        t!("actuators.shade"),
+    ]);
+
+    let actuators = act_items
+        .clone()
         .with_prompt(t!("actuators.set_act"))
-        .items(vec![
-            t!("actuators.water"),
-            t!("actuators.heat"),
-            t!("actuators.light"),
-            t!("actuators.uv"),
-            t!("actuators.shade"),
-        ])
         .interact()?;
     configuration.physical_interface.actuators = actuators
+        .iter()
+        .map(|val| val.try_into())
+        .collect::<Result<Vec<Actuators>, IoError>>()?;
+
+    //Invert output of certain actuators with this setting
+    let invert = act_items
+        .with_prompt(t!("actuators.set_invert"))
+        .interact()?;
+    configuration.physical_interface.inverted = invert
         .iter()
         .map(|val| val.try_into())
         .collect::<Result<Vec<Actuators>, IoError>>()?;

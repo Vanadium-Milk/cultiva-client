@@ -18,11 +18,13 @@ pub struct NetConf {
 pub struct IO {
     pub sensors: Vec<Sensors>,
     pub actuators: Vec<Actuators>,
+    pub inverted: Vec<Actuators>,
 }
 
 pub struct IOFlags {
     pub sensors_flag: u8,
     pub actuators_flag: u8,
+    pub inverted_flag: u8,
 }
 
 #[derive(Deserialize, Serialize, Default, Debug)]
@@ -115,9 +117,21 @@ impl From<IO> for IOFlags {
             }
         }
 
+        let mut isum: u8 = 0;
+        for a in value.inverted {
+            match a {
+                Actuators::Irrigator => isum += 16,
+                Actuators::Heater => isum += 8,
+                Actuators::Lighting => isum += 4,
+                Actuators::UV => isum += 2,
+                Actuators::Shading => isum += 1,
+            }
+        }
+
         Self {
             sensors_flag: ssum,
             actuators_flag: asum,
+            inverted_flag: isum,
         }
     }
 }

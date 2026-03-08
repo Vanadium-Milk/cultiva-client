@@ -18,6 +18,7 @@ fn test_save() -> Result<(), Box<dyn Error>> {
         physical_interface: IO {
             sensors: vec![Sensors::Thermometer, Sensors::Hygrometer, Sensors::Co2],
             actuators: vec![Actuators::Irrigator, Actuators::Heater, Actuators::Lighting],
+            inverted: vec![Actuators::Irrigator],
         },
         board: Board {
             name: "arduino:avr:uno".to_string(),

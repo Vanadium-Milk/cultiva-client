@@ -78,6 +78,7 @@ pub(super) fn compile_sketch(
     board_name: &str,
     sensors_flag: u8,
     actuators_flag: u8,
+    invert_flag: u8,
 ) -> Result<(), IoError> {
     let path = get_code_path(board_name);
 
@@ -89,8 +90,8 @@ pub(super) fn compile_sketch(
             board_name,
             "--build-property",
             &format!(
-                "build.extra_flags=-DSENSORS={} -DACTUATORS={}",
-                sensors_flag, actuators_flag
+                "build.extra_flags=-DSENSORS={} -DACTUATORS={} -DINVERT={}",
+                sensors_flag, actuators_flag, invert_flag
             ),
             &path,
         ],

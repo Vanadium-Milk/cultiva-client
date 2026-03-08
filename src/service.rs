@@ -251,7 +251,7 @@ fn initiate_socket(board: Option<Arc<Mutex<BoardControl>>>) {
 
     println!("{}", t!("socket_io.connecting"));
     //Initiate a socket.io connection
-    match ClientBuilder::new(var("REST_URL").unwrap_or("api.proyectocultiva.org".to_string()))
+    match ClientBuilder::new(var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string()))
         .on("command", command_callback)
         .on("query", on_query)
         .on("activation", activation_callback)
