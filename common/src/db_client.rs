@@ -1,9 +1,10 @@
+use chrono::{DateTime, Local};
 use rusqlite::{Connection, Error, Row};
 use serde::Serialize;
 
 #[derive(Debug, Default, Serialize)]
 pub struct Reading {
-    pub timestamp: Option<String>,
+    pub timestamp: Option<DateTime<Local>>,
     pub temperature: Option<f32>,
     pub air_humidity: Option<f32>,
     pub soil_humidity: Option<f32>,
@@ -25,18 +26,16 @@ fn get_connection() -> rusqlite::Result<Connection, Error> {
     Ok(db)
 }
 
-fn parse_reading() -> fn(&Row) -> Result<Reading, Error> {
-    |row| {
-        Ok(Reading {
-            timestamp: row.get(0)?,
-            temperature: row.get(1)?,
-            air_humidity: row.get(2)?,
-            soil_humidity: row.get(3)?,
-            luminosity: row.get(4)?,
-            air_quality: row.get(5)?,
-            ph: row.get(6)?,
-        })
-    }
+fn parse_reading(row: &Row) -> Result<Reading, Error> {
+    Ok(Reading {
+        timestamp: row.get(0)?,
+        temperature: row.get(1)?,
+        air_humidity: row.get(2)?,
+        soil_humidity: row.get(3)?,
+        luminosity: row.get(4)?,
+        air_quality: row.get(5)?,
+        ph: row.get(6)?,
+    })
 }
 
 // Public functions --------------------------------------------------------------------------------
@@ -75,7 +74,7 @@ pub fn get_last_reading() -> Result<Reading, Error> {
     let res = connection.query_one(
         "SELECT * FROM readings ORDER BY time_stamp DESC LIMIT 1 ",
         (),
-        parse_reading(),
+        parse_reading,
     )?;
     Ok(res)
 }
@@ -87,14 +86,11 @@ pub fn get_readings(limit: u64) -> Result<Vec<Reading>, Error> {
     }
     let connection = get_connection()?;
 
-    let mut stmt = connection.prepare(
-        format!(
-            "SELECT * FROM readings ORDER BY time_stamp DESC LIMIT {}",
-            limit
-        )
-        .as_str(),
-    )?;
-    let res = stmt.query_map([], parse_reading())?;
+    let mut stmt = connection.prepare(&format!(
+        "SELECT * FROM readings ORDER BY time_stamp DESC LIMIT {}",
+        limit
+    ))?;
+    let res = stmt.query_map([], parse_reading)?;
     let data: Result<Vec<Reading>, Error> = res.collect();
 
     data
