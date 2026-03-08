@@ -9,7 +9,7 @@ use crate::service::serial::{BoardControl, register_data};
 use crate::service::socket_io::{
     authenticate_connection, on_failure, on_success, report_result, send_data, test_connection,
 };
-use crate::service::supervision::evaluate;
+use crate::service::supervision::{evaluate, get_assessment};
 use chrono::Utc;
 use common::context::{get_context, set_context};
 use common::db_client::get_readings;
@@ -113,6 +113,30 @@ fn on_capture(payload: Payload, client: RawClient) {
                 }),
             ),
             Err(e) => report_result(client, response_id, false, &e.to_string()),
+        }
+    } else {
+        eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
+    }
+}
+
+fn on_assessment(payload: Payload, raw_client: RawClient) {
+    if let Payload::Text(text) = &payload
+        && !text.is_empty()
+        && let Some(response_id) = text[0].as_str()
+    {
+        match get_assessment() {
+            Ok(data) => send_data(
+                &raw_client,
+                json!({
+                    "id": response_id,
+                    "data": data,
+                    "success": true
+                }),
+            ),
+            Err(e) => {
+                report_result(raw_client, response_id, false, &e.to_string());
+                eprintln!("{}", t!("supervision.retrieve_err", error = e));
+            }
         }
     } else {
         eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
@@ -236,6 +260,7 @@ fn initiate_socket(board: Option<Arc<Mutex<BoardControl>>>) {
         .on("authenticate", authenticate_connection)
         .on("capture", on_capture)
         .on("context", on_context)
+        .on("assessment", on_assessment)
         .reconnect(true)
         .reconnect_on_disconnect(true)
         .connect()

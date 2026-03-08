@@ -6,10 +6,10 @@ use common::state_handling::ActivationState;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
-use std::fs::write;
+use std::fs::{read_to_string, write};
 use std::io;
 use std::io::ErrorKind::Other;
-use serde_json::json;
+use serde_json::{json, Value};
 
 #[derive(Deserialize)]
 struct SupervisionResponse {
@@ -45,4 +45,10 @@ pub(super) async fn evaluate(
         Other,
         t!("supervision.request_err", message = error_msg),
     )))
+}
+
+pub(super) fn get_assessment() -> Result<Value, io::Error> {
+    let content = read_to_string("/var/lib/cultiva/assessment.json")?;
+
+    Ok(serde_json::from_str(&content)?)
 }

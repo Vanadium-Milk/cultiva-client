@@ -121,5 +121,6 @@ supervision:
   parse_err: "Unable to parse evaluation response"
   request_err: "Server returned error response: %{message}"
   start: "Performing supervision..."
+  retrieve_err: "Error retrieving assessment: %{error}"
 sched:
   start: "Scheduling cron jobs..."
