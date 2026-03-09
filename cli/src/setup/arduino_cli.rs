@@ -1,20 +1,20 @@
 use crate::shell::{display_output, execute_command};
 use common::settings::Board;
 use std::error::Error;
+use std::fs::{exists, read_to_string};
 use std::io::Error as IoError;
 use std::io::ErrorKind::NotFound;
 use std::process::{Command, Stdio};
 
-fn install_libraries() -> Result<(), IoError> {
+fn install_library(name: &str) -> Result<(), IoError> {
     println!("Installing required sensor libraries...");
 
     //Insert the rest of the libraries in this function
-    execute_command("arduino-cli", &["lib", "install", "DHT sensor library"])?;
-    execute_command("arduino-cli", &["lib", "install", "Sensirion I2C SCD30"])?;
+    execute_command("arduino-cli", &["lib", "install", name])?;
     Ok(())
 }
 
-fn install_core(name: &str) -> Result<(), IoError> {
+pub(super) fn install_core(name: &str) -> Result<(), IoError> {
     println!("Installing required arduino cores...");
     execute_command("arduino-cli", &["core", "install", name])?;
     Ok(())
@@ -42,7 +42,6 @@ pub(super) fn install_arduino_cli() -> Result<(), IoError> {
     display_output(out)?;
 
     install_core("arduino:avr")?;
-    install_libraries()?;
 
     Ok(())
 }
@@ -55,19 +54,36 @@ pub(super) fn get_board() -> Result<Board, Box<dyn Error>> {
     let out = String::from_utf8(boards.stdout)?.trim().to_string();
     let lines: Vec<&str> = out.split("\n").collect();
 
+    //Helper function to locate arduino info
+    let find_fqbn = |item: &&&str| item.contains(":");
+
+    //Abbreviation for board.none error
+    let no_board = Box::new(IoError::new(NotFound, t!("board.none")));
+
     //First line is the table headers
     if lines.len() <= 1 {
-        return Err(Box::new(IoError::new(NotFound, t!("board.none"))));
-    } else if lines.len() > 2 {
-        // I figured that the arduino cli often messes up and lists things that aren't arduino boards
-        //Implement later handling for multiple arduino boards
-        println!("{}", t!("board.multiple", device = lines[1]))
+        return Err(no_board);
     }
 
-    let attributes: Vec<&str> = lines[1].split(" ").collect();
+    let info = if lines.len() == 2 {
+        lines[1]
+    } else {
+        // I figured that the arduino cli often messes up and lists things that aren't arduino boards
+        //Implement later handling for multiple arduino boards
+        println!("{}", t!("board.multiple", device = lines[1]));
+        lines.iter().find(find_fqbn).unwrap_or(&lines[1])
+    };
+
+    let attributes: Vec<&str> = info.split_whitespace().collect();
+
+    //FQBN always have the : notation, otherwise it might be another type of device
+    let full_board = attributes
+        .iter()
+        .find(|a| a.contains(":"))
+        .ok_or(no_board)?;
 
     let curr_board = Board {
-        name: attributes[9].to_string(),
+        name: full_board.to_string(),
         port: attributes[0].to_string(),
     };
 
@@ -81,6 +97,21 @@ pub(super) fn compile_sketch(
     invert_flag: u8,
 ) -> Result<(), IoError> {
     let path = get_code_path(board_name);
+
+    if !exists(&path)? {
+        return Err(IoError::new(
+            NotFound,
+            t!("board.unsupported", name = board_name),
+        ));
+    }
+
+    //Install libraries defined in the arduino core
+    let dep_file = read_to_string(path.clone() + "/dependencies.txt")?;
+    let dependencies = dep_file.trim().split('\n').collect::<Vec<&str>>();
+
+    for dep in dependencies {
+        install_library(dep)?;
+    }
 
     execute_command(
         "arduino-cli",
@@ -116,4 +147,9 @@ fn test_get_boards() -> Result<(), Box<dyn Error>> {
     dbg!(get_board()?);
 
     Ok(())
+}
+
+#[test]
+fn test_compile_sketch() {
+    compile_sketch("arduino:samd:mkrwifi1010", 0, 0, 0).unwrap();
 }

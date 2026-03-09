@@ -67,6 +67,16 @@ board:
   compile: "Compilando codigo fuente para el nucleo de arduino: %{core}..."
   compile_prompt: "¿Deseas compilar y subir codigo automaticamente a tu microcontrolador? (Recomendado)\nPuedes hacerlo
   más tarde con el comando sudo cultiva compile"
+  manual_set:
+    prompt: "No se pudo determinar automáticamente el puerto y modelo de tu tarjeta, utilizando modo manual..."
+    port: "Introduce el nombre del puerto serial en el que tu tarjeta está conectada (debe comenzar con /dev/tty...)
+    Si no lo conoces reinicia tu dispositivo con la tarjeta conectada y prueba con /dev/ttyACM0 o /dev/ttyUSB0\n"
+    board: "Introduce el FQBN (nombre completo) de tu tarjeta, si no lo conoces puedes encontrarlo en la api de arduino
+    builder: https://builder.arduino.cc/v3/boards\nejemplo: arduino:avr:uno, arduino:avr:nano, para diferentes nucleos
+    cambia la palabra intermedia: arduino:samd:mkrwifi1010, diferentes proveedores cambia la primera palabra: esp32:esp32:nano32\n"
+    invalid_input: "Entrada inválida ¿Reintentar?"
+  unsupported: "La tarjeta especificada '%{name}' no está soportada o no existe, escribe un issue en https://github.com/Vanadium-Milk/cultiva-client
+  para que los mantenedores del proyecto puedan crear un port de tu hardware"
 serial:
   initializing: "Inicializando conexión serial en el puerto: %{port}..."
   init_error: "Error al inicializar la conexión serial: %{error}\nEl servicio se mantendrá ejecutandose, pero sin las

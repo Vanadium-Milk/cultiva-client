@@ -66,6 +66,16 @@ board:
   compile: "Compiling source code into Arduino core: %{core}..."
   compile_prompt: "Do you want to automatically compile and upload supported code into your microcontroller? (Recommended)
   \nYou can do it later by using sudo cultiva compile"
+  manual_set:
+    prompt: "Cannot automatically determine the port and model of your board, using manual mode..."
+    port: "Enter the serial port in which your board is connected (should start with /dev/tty...).\nIf you don't know it
+    restart your machine with your board plugged and try with /dev/ttyACM0 or /dev/ttyUSB0\n"
+    board: "Enter the fully qualified board name of your board, if you don't know it you can find it on the arduino builder
+    api: https://builder.arduino.cc/v3/boards.\nexample: arduino:avr:uno, arduino:avr:nano, for different cores change
+    the word in the middle: arduino:samd:mkrwifi1010, for different vendors change the first word: esp32:esp32:nano32\n"
+    invalid_input: "Invalid input, retry?"
+  unsupported: "The specified board '%{name}' is unsupported or doesn't exist, submit an issue at https://github.com/Vanadium-Milk/cultiva-client
+  so the maintainers can create a port for your hardware"
 serial:
   initializing: "Initializing serial connection on port: %{port}..."
   init_error: "Error initializing serial connection: %{error}\nService will be kept running, but with microcontroller features disabled"

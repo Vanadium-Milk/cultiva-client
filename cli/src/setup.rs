@@ -1,15 +1,16 @@
 mod arduino_cli;
 mod save_settings;
 
+use crate::setup::arduino_cli::install_core;
 use crate::setup::save_settings::save_conf;
 use common::credentials::save_jwt;
 use common::db_client::create_tables;
 use common::rest_client::{Auth, Output, login_account, register_account};
-use common::settings::{Actuators, IOFlags, Sensors, Settings, load_conf};
+use common::settings::{Actuators, Board, IOFlags, Sensors, Settings, load_conf};
 use dialoguer::{Confirm, Input, MultiSelect, Password, Select};
 use git2::Repository;
 use std::error::Error;
-use std::io::Error as IoError;
+use std::io;
 use std::io::ErrorKind::Interrupted;
 
 async fn register_loop() -> Result<(), Box<dyn Error>> {
@@ -172,7 +173,7 @@ pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
     configuration.physical_interface.sensors = sensors
         .iter()
         .map(|val| val.try_into())
-        .collect::<Result<Vec<Sensors>, IoError>>()?;
+        .collect::<Result<Vec<Sensors>, io::Error>>()?;
 
     let act_items = MultiSelect::new().items(vec![
         t!("actuators.water"),
@@ -189,7 +190,7 @@ pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
     configuration.physical_interface.actuators = actuators
         .iter()
         .map(|val| val.try_into())
-        .collect::<Result<Vec<Actuators>, IoError>>()?;
+        .collect::<Result<Vec<Actuators>, io::Error>>()?;
 
     //Invert output of certain actuators with this setting
     let invert = act_items
@@ -198,17 +199,44 @@ pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
     configuration.physical_interface.inverted = invert
         .iter()
         .map(|val| val.try_into())
-        .collect::<Result<Vec<Actuators>, IoError>>()?;
+        .collect::<Result<Vec<Actuators>, io::Error>>()?;
 
     if !Confirm::new()
         .with_prompt(t!("board.download"))
         .interact()?
     {
-        return Err(Box::new(IoError::new(Interrupted, t!("board.decline"))));
+        return Err(Box::new(io::Error::new(Interrupted, t!("board.decline"))));
     }
     arduino_cli::install_arduino_cli()?;
 
-    configuration.board = arduino_cli::get_board()?;
+    //Enter manual mode if the arduino board wasn't detected
+    configuration.board =
+        arduino_cli::get_board().or_else(|e| -> Result<Board, Box<dyn Error>> {
+            eprintln!("{}", e);
+            println!("{}", t!("board.manual_set.prompt"));
+            loop {
+                let port: String = Input::new()
+                    .with_prompt(t!("board.manual_set.port"))
+                    .interact_text()?;
+
+                if !port.starts_with("/dev/") {
+                    eprintln!("{}", t!("board.manual_set.invalid_input"));
+                    continue;
+                }
+
+                let name: String = Input::new()
+                    .with_prompt(t!("board.manual_set.board"))
+                    .interact()?;
+
+                let Some(core) = name.rsplit_once(":") else {
+                    eprintln!("{}", t!("board.manual_set.invalid_input"));
+                    continue;
+                };
+                install_core(core.0)?;
+
+                return Ok(Board { port, name });
+            }
+        })?;
 
     println!("{}", t!("config.saving"));
     save_conf(configuration)?;
