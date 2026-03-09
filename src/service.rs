@@ -19,7 +19,7 @@ use serde_json::json;
 use std::env::var;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
-use std::thread::spawn;
+use std::thread::{sleep, spawn};
 use std::time::Duration;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
@@ -177,100 +177,110 @@ async fn supervise(board: Arc<Mutex<BoardControl>>) {
 }
 
 fn initiate_socket(board: Option<Arc<Mutex<BoardControl>>>) {
-    let comm_arc = board.clone();
-    let act_arc = board.clone();
+    //Retry five times to establish initial connection
+    for i in 1..5 {
+        let comm_arc = board.clone();
+        let act_arc = board.clone();
 
-    //Callback to pass the port value to the command handling function
-    let command_callback = move |payload: Payload, socket: RawClient| {
-        if let Payload::Text(text) = &payload
-            && text.len() >= 3
-            && let Some(response_id) = text[0].as_str()
-            && let Some(mode) = text[1].as_str()
-            && let Ok(command) = serde_json::from_value::<ActivationState>(text[2].clone())
-        {
-            if let Some(board) = &comm_arc
-                && let Ok(mut locked) = board.lock()
+        //Callback to pass the port value to the command handling function
+        let command_callback = move |payload: Payload, socket: RawClient| {
+            if let Payload::Text(text) = &payload
+                && text.len() >= 3
+                && let Some(response_id) = text[0].as_str()
+                && let Some(mode) = text[1].as_str()
+                && let Ok(command) = serde_json::from_value::<ActivationState>(text[2].clone())
             {
-                let result = match mode {
-                    "auto" => locked.set_auto_modes(command),
-                    _ => locked.set_activation(command),
-                };
-                match result {
-                    Ok(_) => {
-                        report_result(socket, response_id, true, "Command performed successfully");
+                if let Some(board) = &comm_arc
+                    && let Ok(mut locked) = board.lock()
+                {
+                    let result = match mode {
+                        "auto" => locked.set_auto_modes(command),
+                        _ => locked.set_activation(command),
+                    };
+                    match result {
+                        Ok(_) => {
+                            report_result(
+                                socket,
+                                response_id,
+                                true,
+                                "Command performed successfully",
+                            );
+                        }
+                        Err(e) => report_result(socket, response_id, false, &e.to_string()),
                     }
-                    Err(e) => report_result(socket, response_id, false, &e.to_string()),
+                } else {
+                    report_result(
+                        socket,
+                        response_id,
+                        false,
+                        t!("serial.unavailable").as_ref(),
+                    );
                 }
             } else {
-                report_result(
-                    socket,
-                    response_id,
-                    false,
-                    t!("serial.unavailable").as_ref(),
-                );
+                eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
             }
-        } else {
-            eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
-        }
-    };
+        };
 
-    let activation_callback = move |payload: Payload, client: RawClient| {
-        if let Payload::Text(text) = &payload
-            && text.len() >= 2
-            && let Some(response_id) = text[0].as_str()
-            && let Some(mode) = text[1].as_str()
-        {
-            if let Some(board) = &act_arc
-                && let Ok(locked) = board.lock()
+        let activation_callback = move |payload: Payload, client: RawClient| {
+            if let Payload::Text(text) = &payload
+                && text.len() >= 2
+                && let Some(response_id) = text[0].as_str()
+                && let Some(mode) = text[1].as_str()
             {
-                let info = match mode {
-                    "auto" => Auto,
-                    _ => Active,
-                };
-                send_data(
-                    &client,
-                    json!({
-                        "id": response_id,
-                        "data": locked.get_activation(info),
-                        "success": true
-                    }),
-                )
+                if let Some(board) = &act_arc
+                    && let Ok(locked) = board.lock()
+                {
+                    let info = match mode {
+                        "auto" => Auto,
+                        _ => Active,
+                    };
+                    send_data(
+                        &client,
+                        json!({
+                            "id": response_id,
+                            "data": locked.get_activation(info),
+                            "success": true
+                        }),
+                    )
+                } else {
+                    report_result(
+                        client,
+                        response_id,
+                        false,
+                        t!("serial.unavailable").as_ref(),
+                    );
+                }
             } else {
-                report_result(
-                    client,
-                    response_id,
-                    false,
-                    t!("serial.unavailable").as_ref(),
-                );
+                eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
             }
-        } else {
-            eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
+        };
+        println!("{}", t!("socket_io.connecting"));
+        //Initiate a socket.io connection
+        match ClientBuilder::new(
+            var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string()),
+        )
+        .on("command", command_callback)
+        .on("query", on_query)
+        .on("activation", activation_callback)
+        .on("success", on_success)
+        .on("error", on_failure)
+        .on("authenticate", authenticate_connection)
+        .on("capture", on_capture)
+        .on("context", on_context)
+        .on("assessment", on_assessment)
+        .reconnect(true)
+        .reconnect_on_disconnect(true)
+        .connect()
+        {
+            Ok(connection) => {
+                test_connection(connection);
+                return;
+            }
+            Err(e) => {
+                eprintln!("{}", t!("socket_io.error", error = e, attempt = i));
+                sleep(Duration::from_secs(5 * i));
+            },
         }
-    };
-
-    println!("{}", t!("socket_io.connecting"));
-    //Initiate a socket.io connection
-    match ClientBuilder::new(
-        var("REST_URL").unwrap_or("https://api.proyectocultiva.org".to_string()),
-    )
-    .on("command", command_callback)
-    .on("query", on_query)
-    .on("activation", activation_callback)
-    .on("success", on_success)
-    .on("error", on_failure)
-    .on("authenticate", authenticate_connection)
-    .on("capture", on_capture)
-    .on("context", on_context)
-    .on("assessment", on_assessment)
-    .reconnect(true)
-    .reconnect_on_disconnect(true)
-    .connect()
-    {
-        Ok(connection) => {
-            test_connection(connection);
-            return;
-        }
-        Err(e) => eprintln!("{}", t!("socket_io.error", error = e)),
     }
     eprintln!("{}", t!("socket_io.disable"));
 }

@@ -120,7 +120,7 @@ socket_io:
   message: "Server message: %{message}"
   lost: "Connection lost, attempting reconnect..."
   disable: "Couldn't establish socket.io connection, disabling online features"
-  error: "Socket.io connection error: %{error}"
+  error: "Socket.io connection error: %{error}. retry %{attempt} out of 5"
 capture:
   success: "Saved current frame"
   failed: "Failed to save frame: %{error}"

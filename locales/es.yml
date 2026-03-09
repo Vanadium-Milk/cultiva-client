@@ -125,7 +125,7 @@ socket_io:
   message: "Mensaje del servidor: %{message}"
   lost: "Se ha perdido la conexión, intentando reconectar"
   disable: "No se pudo establecer una conexión socket.io, deshabilitando funciones en linea"
-  error: "Error de conexión de socket.io: %{error}"
+  error: "Error de conexión de socket.io: %{error}. intento %{attempt} de 5"
 capture:
   success: "Guardado el frame actual"
   failed: "Fallo al guardar el frame: %{error}"
