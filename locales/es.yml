@@ -7,6 +7,8 @@ no_env: "Variable de entorno faltante: %{var_name}. Abortando"
 write_err: "No se pudo escribir en el archivo: %{filename}, %{error}"
 usage: "uso: cultiva-cli <configure | compile>"
 arg_unknown: "Error, argumento no reconocido: %{arg}"
+setup_complete: "Configuración completada exitosamente. Ejecuta 'sudo systemctl enable --now cultiva.service' para empezar
+a usar la aplicación"
 http:
   error: "No se pudo procesar la solicitud HTTP"
 online:

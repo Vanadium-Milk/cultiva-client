@@ -251,5 +251,7 @@ pub(super) async fn setup() -> Result<(), Box<dyn Error>> {
         compile_microcontroller()?;
     }
 
+    println!("{}", t!("setup_complete"));
+
     Ok(())
 }

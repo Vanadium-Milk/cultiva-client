@@ -6,6 +6,7 @@ no_env: "Missing environment variable: %{var_name}. Aborting"
 write_err: "Couldn't write into file: %{filename}, %{error}"
 usage: "usage: cultiva-cli <configure | compile>"
 arg_unknown: "Error, unrecognized argument: %{arg}"
+setup_complete: "Setup completed successfully. Execute 'sudo systemctl enable --now cultiva.service' to start using the app"
 http:
   error: "Cannot perform HTTP request"
 online:

@@ -2,8 +2,8 @@ Package: cultiva
 Version: 1.0.0
 Section: web
 Priority: optional
-Architecture: all
+Architecture: amd64
 Essential: no
-Depends: systemd, curl
+Depends: systemd, curl, libssl3 (>= 3.0.0~), libgcc-s1, libc6, zlib1g
 Maintainer: Leah Castro <leahvcm.01@gmail.com>
-Description: Client side application for cultiva greenhouses
+Description: Client side application for cultiva intelligent gardens
