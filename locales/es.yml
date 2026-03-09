@@ -5,6 +5,8 @@ db_panic: "Error creando la base de datos, asegurese de ejecutar con permisos de
 setup_ini: "Inicializando configuración..."
 no_env: "Variable de entorno faltante: %{var_name}. Abortando"
 write_err: "No se pudo escribir en el archivo: %{filename}, %{error}"
+usage: "uso: cultiva-cli <configure | compile>"
+arg_unknown: "Error, argumento no reconocido: %{arg}"
 http:
   error: "No se pudo procesar la solicitud HTTP"
 online:
@@ -30,15 +32,14 @@ login:
   acc_created: "Cuenta creada exitosamente."
   register_fail: "Error al crear la cuenta"
   no_connection: "No se pudo conectar con los servidores ¿Intentar de nuevo?"
-  login_success: "Sesión iniciada exitosamente."
+  success: "Sesión iniciada exitosamente."
   log_failed: "Fallo al iniciar sesión"
 no_root: "Faltan privilegios de usuario root, abortando"
 config:
   found: "Archivo de configuración encontrado ¿Deseas configurar de nuevo y sobreescribir?"
   saving: "Guardando la configuración"
-  load_err: "Fallo al cargar la configuración, use el comando cultiva configure para establecerla"
+  load_err: "Fallo al cargar la configuración, use el comando cultiva-cli configure para establecerla"
   load: "Cargando archivos de configuración..."
-arg_unknown: "Error, argumento no reconocido"
 sensors:
   set_sensors: "Selecciona los sensores que posee tu sistema"
   dht11: "DHT11 (Termómetro + higrómetro)"
@@ -77,6 +78,8 @@ board:
     invalid_input: "Entrada inválida ¿Reintentar?"
   unsupported: "La tarjeta especificada '%{name}' no está soportada o no existe, escribe un issue en https://github.com/Vanadium-Milk/cultiva-client
   para que los mantenedores del proyecto puedan crear un port de tu hardware"
+  libraries: "Instalando librerías de sensores requeridas..."
+  cores: "Instalando arquitecturas de Arduino requeridas..."
 serial:
   initializing: "Inicializando conexión serial en el puerto: %{port}..."
   init_error: "Error al inicializar la conexión serial: %{error}\nEl servicio se mantendrá ejecutandose, pero sin las

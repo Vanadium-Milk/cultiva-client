@@ -7,7 +7,7 @@ use std::io::ErrorKind::NotFound;
 use std::process::{Command, Stdio};
 
 fn install_library(name: &str) -> Result<(), IoError> {
-    println!("Installing required sensor libraries...");
+    println!("{}", t!("board.libraries"));
 
     //Insert the rest of the libraries in this function
     execute_command("arduino-cli", &["lib", "install", name])?;
@@ -15,7 +15,7 @@ fn install_library(name: &str) -> Result<(), IoError> {
 }
 
 pub(super) fn install_core(name: &str) -> Result<(), IoError> {
-    println!("Installing required arduino cores...");
+    println!("{}", t!("board.cores"));
     execute_command("arduino-cli", &["core", "install", name])?;
     Ok(())
 }
