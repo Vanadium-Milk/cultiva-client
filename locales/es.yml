@@ -142,5 +142,6 @@ supervision:
   request_err: "El servidor otorgó una respuesta de error: %{message}"
   start: "Ejecutando supervisión"
   retrieve_err: "Error al recuperar el diagnóstico: %{error}"
+  range_err: "Error interpretando los rangos de variables: %{error}"
 sched:
   start: "iniciando trabajos cron..."

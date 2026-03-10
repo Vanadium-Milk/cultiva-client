@@ -4,20 +4,22 @@ mod socket_io;
 pub mod supervision;
 
 use crate::service::capture::{get_image_buffer, poll_cam};
+use crate::service::serial::BoardControl;
 use crate::service::serial::Modes::{Active, Auto};
-use crate::service::serial::{BoardControl, register_data};
 use crate::service::socket_io::{
     authenticate_connection, on_failure, on_success, report_result, send_data, test_connection,
 };
-use crate::service::supervision::{evaluate, get_assessment};
+use crate::service::supervision::{evaluate, get_assessment, get_ranges};
 use common::context::{get_context, set_context};
-use common::db_client::get_readings;
+use common::db_client::{get_readings, insert_reading};
 use common::settings::load_conf;
 use common::state_handling::ActivationState;
 use rust_socketio::{ClientBuilder, Payload, RawClient};
 use serde_json::json;
 use std::env::var;
 use std::error::Error;
+use std::io;
+use std::io::ErrorKind::Deadlock;
 use std::sync::{Arc, Mutex};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
@@ -139,6 +141,86 @@ fn on_assessment(payload: Payload, raw_client: RawClient) {
         }
     } else {
         eprintln!("{}: {:?}", t!("socket_io.payload_invalid"), payload);
+    }
+}
+
+fn register_data(board: Arc<Mutex<BoardControl>>) -> io::Error {
+    //Added delay because sometimes it starts before finishing initializing the connection
+    sleep(Duration::from_secs(5));
+
+    //Polling loop with delay
+    let mut cycle = Duration::from_secs(10);
+    loop {
+        //Adding sleep before the lock, so the mutex stays available
+        sleep(cycle);
+        cycle = Duration::from_secs(10);
+
+        match board.lock() {
+            Ok(mut locked_board) => match locked_board.poll_sensors() {
+                Ok(read) => {
+                    //Use defined ranges to modify actuators behavior
+                    match get_ranges() {
+                        Ok(ranges) => {
+                            let mut activate = ActivationState::new();
+                            if locked_board.auto_modes.heater.is_some_and(|x| x) {
+                                if read.temperature.is_some_and(|t| t > ranges.temperature.max) {
+                                    activate.heater = Some(false);
+                                } else if read
+                                    .temperature
+                                    .is_some_and(|t| t < ranges.temperature.min)
+                                {
+                                    activate.heater = Some(true);
+                                }
+                            }
+                            if locked_board.auto_modes.irrigator.is_some_and(|x| x) {
+                                if read
+                                    .soil_humidity
+                                    .is_some_and(|i| i > ranges.soil_humidity.max)
+                                {
+                                    activate.irrigator = Some(false);
+                                } else if read
+                                    .soil_humidity
+                                    .is_some_and(|i| i < ranges.soil_humidity.min)
+                                {
+                                    activate.irrigator = Some(true);
+                                }
+                            }
+                            if locked_board.auto_modes.lighting.is_some_and(|x| x) {
+                                if read.luminosity.is_some_and(|l| l > ranges.luminosity.max) {
+                                    activate.lighting = Some(false);
+                                } else if read.luminosity.is_some_and(|l| l < ranges.luminosity.min)
+                                {
+                                    activate.lighting = Some(true);
+                                }
+                            }
+
+                            if let Err(e) = locked_board.set_activation(activate) {
+                                eprintln!("{}", t!("serial.command.error", error = e));
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("{}", t!("supervision.range_err", error = e));
+                        }
+                    }
+
+                    match insert_reading(read) {
+                        Ok(_) => {
+                            println!("{}", t!("serial.inserted"));
+                            cycle = Duration::from_mins(30);
+                        }
+                        Err(e) => {
+                            eprintln!("{}. {}", t!("serial.insert_error", error = e), t!("retry"));
+                        }
+                    }
+                }
+                Err(err) => {
+                    eprintln!("{}, {}", t!("serial.input_error", error = err), t!("retry"));
+                }
+            },
+            Err(e) => {
+                return io::Error::new(Deadlock, format!("{}", t!("error.fatal", error = e)));
+            }
+        }
     }
 }
 
@@ -279,7 +361,7 @@ fn initiate_socket(board: Option<Arc<Mutex<BoardControl>>>) {
             Err(e) => {
                 eprintln!("{}", t!("socket_io.error", error = e, attempt = i));
                 sleep(Duration::from_secs(5 * i));
-            },
+            }
         }
     }
     eprintln!("{}", t!("socket_io.disable"));

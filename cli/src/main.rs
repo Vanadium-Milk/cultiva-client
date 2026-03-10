@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     rust_i18n::set_locale(&locale);
 
     let args: Vec<String> = args().collect();
-    if args.len() <= 1 || args[1] == "--help" || args[1] == "-h"{
+    if args.len() <= 1 || args[1] == "--help" || args[1] == "-h" {
         println!("{}", t!("usage"));
     } else if args[1] == "configure" {
         sudo_or_error()?;
@@ -33,8 +33,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     } else if args[1] == "compile" {
         sudo_or_error()?;
         setup::compile_microcontroller()?;
-    }
-    else {
+    } else {
         println!("{}", t!("arg_unknown", arg = args[1]));
         println!("{}", t!("usage"));
     }
